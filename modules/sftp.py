@@ -151,7 +151,7 @@ class Module:
                 '-i', self.key,
                 '{}@{}'.format(self.user, self.host[7:]),
                 '-p', str(self.port),
-                '''stat --format '%y' '{}{}' '''.format(self.path, path)]).decode('utf-8'))
+                '''stat --format '%Y' '{}{}' '''.format(self.path, path)]).decode('utf-8'))
         print(repr(('{}{}'.format(self.path, path), sz, tm)))
         return sz, tm
 

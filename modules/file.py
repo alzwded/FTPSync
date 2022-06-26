@@ -84,7 +84,7 @@ class Module:
 
     def stat(self, path):
         sz = int(subprocess.check_output(['stat', '--format', '%s', '{}{}'.format(self.path, path)]).decode('utf-8'))
-        tm = dateutil.parser.parse(subprocess.check_output(['stat', '--format', '%y', '{}{}'.format(self.path, path)]).decode('utf-8'))
+        tm = dateutil.parser.parse(subprocess.check_output(['stat', '--format', '%Y', '{}{}'.format(self.path, path)]).decode('utf-8'))
         print(repr(('{}{}'.format(self.path, path), sz, tm)))
         return sz, tm
 
