@@ -95,6 +95,7 @@ class Module:
         self.path =  config['path'] if 'path' in config else '/'
         if(self.path[-1] != '/'):
             self.path += '/'
+        self.location = '{}:{}{}'.format(self.host, self.port, self.path)
 
         print("""SFTP module initialized:
   host: {}
@@ -104,7 +105,7 @@ class Module:
   key: {}""".format(self.host, self.port, self.path, self.user, self.key))
 
     def _format_user(self):
-        return '''-u '{}:' --key '{}' '''.format(self.user, self.key)
+        return '''-u '{}:' --key "{}" '''.format(self.user, self.key)
 
     def _list(self, path):
         if(path[-1] != '/'):
