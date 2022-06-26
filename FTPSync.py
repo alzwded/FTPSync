@@ -21,9 +21,9 @@ import os
 import getopt
 import functools
 import time
-import traceback
 from lib.factory import ModuleFactory
 import lib.config
+from lib.ftb import FormatTB
 
 #ftp_mod = modules.ftp.instance()
 #sftp_mod = modules.sftp.instance()
@@ -83,7 +83,7 @@ def execute_commands(commands, reference, mirror):
                     upload_file(i, reference, mirror)
                 except Exception as err:
                     _, _, exc_traceback = sys.exc_info()
-                    log.append('ERROR: failed to UPLOAD {} last reason {} traceback {}'.format(i, err, exc_traceback))
+                    log.append('ERROR: failed to UPLOAD {} last reason {} traceback {}'.format(i, err, FormatTB(exc_traceback)))
     if(commands.has_section("Merge")):
         print('Processing [Merge]')
         s = commands['Merge']
@@ -94,7 +94,7 @@ def execute_commands(commands, reference, mirror):
                     upload_file(i, reference, mirror)
                 except Exception as err:
                     _, _, exc_traceback = sys.exc_info()
-                    log.append('ERROR: failed to MERGE=! {} last reason {} traceback {}'.format(i, err, exc_traceback))
+                    log.append('ERROR: failed to MERGE=! {} last reason {} traceback {}'.format(i, err, FormatTB(exc_traceback)))
             elif(action == 'k'):
                 try:
                     print('renaming {} on {}'.format(i, mirror.location))
@@ -107,7 +107,7 @@ def execute_commands(commands, reference, mirror):
                         except Exception as err:
                             _, _, exc_traceback = sys.exc_info()
                             print(err)
-                            print(traceback.format_tb(exc_traceback))
+                            print(FormatTB(exc_traceback))
                             if(ntries > 0):
                                 print('trying {} more times after {}s'.format(ntries, DEFAULT_SECONDS))
                                 time.sleep(DEFAULT_SECONDS)
@@ -115,7 +115,7 @@ def execute_commands(commands, reference, mirror):
                                 raise err
                 except Exception as err:
                     _, _, exc_traceback = sys.exc_info()
-                    log.append('ERROR: failed to RENAME {} last reason {} traceback {}'.format(i, err, exc_traceback))
+                    log.append('ERROR: failed to RENAME {} last reason {} traceback {}'.format(i, err, FormatTB(exc_traceback)))
                     continue
                 ok = False
                 try:
@@ -127,7 +127,7 @@ def execute_commands(commands, reference, mirror):
                         upload_file(i, reference, mirror)
                     except Exception as err:
                         _, _, exc_traceback = sys.exc_info()
-                        log.append('ERROR: failed to upload during MERGE=k for {} last reason {} traceback {}'.format(i, err, exc_traceback))
+                        log.append('ERROR: failed to upload during MERGE=k for {} last reason {} traceback {}'.format(i, err, FormatTB(exc_traceback)))
                 else:
                     log.append('ERROR: failed to KEEP {} file is still there after rename, cowardly refusing to overwrite file!'.format(i))
     with open('error.log', 'w') as f:
