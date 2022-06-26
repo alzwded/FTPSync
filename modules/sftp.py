@@ -144,13 +144,13 @@ class Module:
                 'ssh',
                 '-i', self.key,
                 '{}@{}'.format(self.user, self.host),
-                '-p', self.port,
+                '-p', str(self.port),
                 '''stat --format '%s' '{}{}' '''.format(self.path, path)]).decode('utf-8'))
         tm = dateutil.parser.parse(subprocess.check_output([
                 'ssh',
                 '-i', self.key,
                 '{}@{}'.format(self.user, self.host),
-                '-p', self.port,
+                '-p', str(self.port),
                 '''stat --format '%y' '{}{}' '''.format(self.path, path)]).decode('utf-8'))
         print(repr(('{}{}'.format(self.path, path), sz, tm)))
         return sz, tm
@@ -170,7 +170,7 @@ class Module:
                 'ssh',
                 '-i', self.key,
                 '{}@{}'.format(self.user, self.host),
-                '-p', self.port,
+                '-p', str(self.port),
                 '''mv '{}' '{}' '''.format(renfro, rento)])
 
     @classmethod
