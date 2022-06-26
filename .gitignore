@@ -3,3 +3,5 @@ test.conf
 __pycache__
 *.xsync
 *.log
+vm/*.iso
+vm/*.img
