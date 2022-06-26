@@ -21,6 +21,44 @@ import os.path
 import dateutil.parser
 from lib.factory import ModuleFactory
 
+FOUR_MEG = 1024 * 1024 * 4
+SEEK_SET = 0
+SEEK_POS = 1
+SEEK_END = 2
+
+class FileHandle:
+    def __init__(self, module, path):
+        self.m = module
+        self.path = '{}{}'.format(self.m.path, path)
+        self.sz = None
+
+    def write(self, offset, data):
+        with open(self.path, 'wb') as f:
+            f.seek(0, SEEK_SET)
+            f.truncate(offset)
+            f.seek(offset, SEEK_SET)
+            f.write(data)
+
+    def drain_to(self, sink):
+        if(self.sz is None):
+            self.sz, _ = self.m.stat(self.path)
+
+        # don't start at 0 in case we're retrying
+        offset = sink.offset
+
+        nblocks = self.sz / FOUR_MEG + (1 if ((self.sz % FOUR_MEG) == 0) else 0);
+        nblocks -= offset / FOUR_MEG
+
+        with open(self.path, 'rb') as f:
+            while(nblocks > 0):
+                toread = FOUR_MEG if offset + FOUR_MEG < self.sz else self.sz % FOUR_MEG
+                f.seek(offset, SEEK_SET)
+                data = f.read(toread)
+                sink.write(offset, data)
+                offset += FOUR_MEG
+                nblocks -= 1
+
+
 class Module:
     def __init__(self, config):
       self.path = os.path.abspath(config['path'])
@@ -40,6 +78,9 @@ class Module:
         tm = dateutil.parser.parse(subprocess.check_output(['stat', '--format', '%y', '{}{}'.format(self.path, path)]).decode('utf-8'))
         print(repr(('{}{}'.format(self.path, path), sz, tm)))
         return sz, tm
+
+    def open(self, path):
+        return FileHandle(self, path)
 
     @classmethod
     def new(cls, config):
