@@ -29,15 +29,23 @@ SEEK_END = 2
 class FileHandle:
     def __init__(self, module, path):
         self.m = module
-        self.path = '{}{}'.format(self.m.path, path)
+        self.fullpath = '{}{}'.format(self.m.path, path)
+        self.path = path
         self.sz = None
+        self.offset = 0
+
+    def rewind(self):
+        self.offset = 0
 
     def write(self, offset, data):
-        with open(self.path, 'wb') as f:
+        d = os.path.dirname(self.fullpath)
+        _ = subprocess.check_output(['mkdir', '-p', d])
+        with open(self.fullpath, 'wb') as f:
             f.seek(0, SEEK_SET)
             f.truncate(offset)
             f.seek(offset, SEEK_SET)
             f.write(data)
+            self.offset += len(data)
 
     def drain_to(self, sink):
         if(self.sz is None):
@@ -49,7 +57,7 @@ class FileHandle:
         nblocks = self.sz / FOUR_MEG + (1 if ((self.sz % FOUR_MEG) == 0) else 0);
         nblocks -= offset / FOUR_MEG
 
-        with open(self.path, 'rb') as f:
+        with open(self.fullpath, 'rb') as f:
             while(nblocks > 0):
                 toread = FOUR_MEG if offset + FOUR_MEG < self.sz else self.sz % FOUR_MEG
                 f.seek(offset, SEEK_SET)
@@ -62,6 +70,7 @@ class FileHandle:
 class Module:
     def __init__(self, config):
       self.path = os.path.abspath(config['path'])
+      self.host = 'localhost'
       if(self.path[-1] != '/'):
         self.path += '/'
       print("""FILE module initialized:
@@ -81,6 +90,16 @@ class Module:
 
     def open(self, path):
         return FileHandle(self, path)
+
+    def rename(self, path):
+        i = 1
+        while(os.path.exists('{}{}.{}'.format(self.path, path, i))):
+            i += 1
+        renfro = '{}{}'.format(self.path, path)
+        rento = '{}{}.{}'.format(self.path, path, i)
+
+        print('will rename {} to {}'.format(renfro, rento))
+        os.rename(renfro, rento)
 
     @classmethod
     def new(cls, config):

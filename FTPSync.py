@@ -19,6 +19,8 @@
 import sys
 import os
 import getopt
+import functools
+import time
 from lib.factory import ModuleFactory
 import lib.config
 
@@ -28,6 +30,8 @@ import lib.config
 
 ARGS = 'c:hvx:w:T'
 VERSION = '0.1'
+DEFAULT_TRIES = 3
+DEFAULT_SECONDS = 2 * 60
 
 def usage():
     global ARGS
@@ -47,8 +51,118 @@ def generate_commands(reference, mirror):
     for f in mirror.tree():
         print(repr({'file': f, 'stats': mirror.stat(f)}))
 
+def upload_file(i, reference, mirror):
+    print('Uploading {} from {} to {}'.format(i, reference.host, mirror.host))
+    refh = reference.open(i)
+    mirh = mirror.open(i)
+    tries_left = DEFAULT_TRIES
+    while(tries_left > 0):
+        tries_left -= 1
+        try:
+            refh.drain_to(mirh)
+        except Exception as err:
+            print(err)
+            if tries_left > 0:
+                print('trying {} more times after {}s'.format(tries_left, DEFAULT_SECONDS))
+                time.sleep(DEFAULT_SECONDS)
+            else:
+                print('giving up')
+                raise err
+
 def execute_commands(commands, reference, mirror):
-    raise Exception('not implemented')
+    log = []
+    if(commands.has_section("Upload")):
+        print('Processing [Upload]')
+        s = commands['Upload']
+        for i in s:
+            action = s[i]
+            if(action == '!'):
+                try:
+                    upload_file(i, reference, mirror)
+                except Exception as err:
+                    _, _, exc_traceback = sys.exc_info()
+                    log.append('ERROR: failed to UPLOAD {} last reason {} traceback {}'.format(i, err, exc_traceback))
+    if(commands.has_section("Merge")):
+        print('Processing [Merge]')
+        s = commands['Merge']
+        for i in s:
+            action = s[i]
+            if(action == '!'):
+                try:
+                    upload_file(i, reference, mirror)
+                except Exception as err:
+                    _, _, exc_traceback = sys.exc_info()
+                    log.append('ERROR: failed to MERGE=! {} last reason {} traceback {}'.format(i, err, exc_traceback))
+            elif(action == 'k'):
+                try:
+                    print('renaming {} on {}'.format(i, mirror.host))
+                    mirror.rename(i)
+                except Exception as err:
+                    _, _, exc_traceback = sys.exc_info()
+                    log.append('ERROR: failed to RENAME {} last reason {} traceback {}'.format(i, err, exc_traceback))
+                    continue
+                ok = False
+                try:
+                    mirror.stat(i)
+                except:
+                    ok = True
+                if(ok):
+                    try:
+                        upload_file(i, reference, mirror)
+                    except Exception as err:
+                        _, _, exc_traceback = sys.exc_info()
+                        log.append('ERROR: failed to upload during MERGE=k for {} last reason {} traceback {}'.format(i, err, exc_traceback))
+                else:
+                    log.append('ERROR: failed to KEEP {} file is still there after rename, cowardly refusing to overwrite file!'.format(i))
+    with open('error.log', 'w') as f:
+        f.writelines(['{}\n'.format(line) for line in log])
+    return len(log)
+
+def process_commands1(execute, reference, mirror):
+    commands = lib.config.parse_commands(execute)
+    def countBangs(s, k):
+        if(s[k] == '!'):
+            return 1
+        else:
+            return 0
+    def countKeeps(s, k):
+        if(s[k] == 'k'):
+            return 1
+        else:
+            return 0
+    def countSkips(s, k):
+        if(s[k] == 's'):
+            return 1
+        else:
+            return 0
+    for section_name in commands:
+        section = commands[section_name]
+        if(section_name == 'Upload'):
+            print('{} new files to upload'.format(
+                    functools.reduce(lambda a, x: a + countBangs(section, x), section.keys(), 0)
+                    ))
+            print('{} new files skipped'.format(
+                    functools.reduce(lambda a, x: a + countSkips(section, x), section.keys(), 0)
+                    ))
+        elif(section_name == 'Extra'):
+            print('{} extra files on mirror'.format(len(section)))
+        elif(section_name == 'Merge'):
+            print('{} files will be overwritten'.format(
+                    functools.reduce(lambda a, x: a + countBangs(section, x), section.keys(), 0)
+                    ))
+            print('{} files will be renamed on mirror and new copies uploaded'.format(
+                    functools.reduce(lambda a, x: a + countKeeps(section, x), section.keys(), 0)
+                    ))
+            print('{} files not merged'.format(
+                    functools.reduce(lambda a, x: a + countSkips(section, x), section.keys(), 0)
+                    ))
+    print('Executing...')
+    nerrors = execute_commands(commands, reference, mirror)
+    print('Done')
+    if(nerrors > 0):
+        print('Review {}'.format('error.log'))
+    else:
+        print('No errors reported')
 
 def main():
     global ARGS
@@ -90,9 +204,19 @@ def main():
 
     if(execute is None):
         lib.config.generate_commands(out_commands, reference, mirror, use_timestamps)
+        print('Done')
+        print("""Review {} then run \n    {} -c {} -x {}\nto process batch""".format(
+                out_commands,
+                sys.argv[0],
+                config,
+                out_commands))
     else:
-        commands = lib.config.parse_commands(execute)
-        execute_commands(commands, reference, mirror)
+        process_commands1(execute, reference, mirror)
+        print('You may want to delete {} and rerun\n    {} -c {}\nagain to check state.'.format(
+                execute,
+                sys.argv[0],
+                config,
+                ))
 
 
 if __name__ == "__main__":

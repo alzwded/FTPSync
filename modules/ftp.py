@@ -20,6 +20,68 @@ import dateutil.parser
 import re
 from lib.factory import ModuleFactory
 
+FOUR_MEG = 4 * 1024 * 1024
+
+class FileHandle:
+    def __init__(self, module, path):
+        self.m = module
+        self.path = path
+        self.fullpath = '{}{}'.format(self.m.path, path)
+        if(self.fullpath[-1] == '/'):
+            raise Exception('the path arg should not end in /, but got {}'.format(path))
+        self.sz = None
+        self.offset = 0
+
+    def _format_C(cls, offset):
+        if(offset == 0):
+            return ''
+        else:
+            return '-C {}'.format(offset)
+
+    def write(self, offset, data):
+        _ = subprocess.run("""curl --ftp-pasv --ftp-create-dirs -T - {} {} "{}:{}{}" """.format(
+                    self._format_C(offset),
+                    self.m._format_user(),
+                    self.m.host,
+                    self.m.port,
+                    self.fullpath),
+                shell=True,
+                check=True,
+                input=data,
+                capture_output=True)
+        self.offset += len(data)
+
+    def rewind(self):
+        self.offset = 0
+
+    def _format_bytes(self, offset):
+        toread = FOUR_MEG if offset + FOUR_MEG < self.sz else self.sz % FOUR_MEG
+        start = offset
+        end = offset + toread
+        return '-r {}-{}'.format(start, end)
+
+    def drain_to(self, sink):
+        if(self.sz is None):
+            self.sz, _ = self.m.stat(self.path)
+
+        # don't start at 0 in case we're retrying
+        offset = sink.offset
+
+        nblocks = self.sz / FOUR_MEG + (1 if ((self.sz % FOUR_MEG) == 0) else 0);
+        nblocks -= offset / FOUR_MEG
+
+        while(nblocks > 0):
+            data = subprocess.check_output("""curl --ftp-pasv {} {} "{}:{}{}" """.format(
+                        self.m._format_user(),
+                        self._format_bytes(offset),
+                        self.m.host,
+                        self.m.port,
+                        self.fullpath),
+                    shell=True)
+            sink.write(offset, data)
+            offset += FOUR_MEG
+            nblocks -= 1
+
 class Module:
     def __init__(self, config):
         self.host = 'ftp://{}'.format(config['host'])
@@ -107,6 +169,12 @@ class Module:
                 continue
 
         return sz, tm
+
+    def open(self, path):
+        return FileHandle(self, path)
+
+    def rename(self, renfro):
+        raise Exception('not implemented')
 
     @classmethod
     def new(cls, config):

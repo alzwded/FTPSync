@@ -2,3 +2,4 @@ test.conf
 *.conf
 __pycache__
 *.xsync
+*.log

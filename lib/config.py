@@ -123,4 +123,7 @@ def generate_commands(configpath, reference, mirror, use_timestamps=False):
             f.write("{} = {}\n".format(k, SKIP))
 
 def parse_commands(commandspath):
-    raise Exception('not implemented')
+    config = configparser.ConfigParser()
+    config.read(commandspath)
+    return config
+        
