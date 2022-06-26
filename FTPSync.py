@@ -26,7 +26,7 @@ import lib.config
 #sftp_mod = modules.sftp.instance()
 #file_mod = modules.file.instance()
 
-ARGS = 'c:hvx:w:'
+ARGS = 'c:hvx:w:T'
 VERSION = '0.1'
 
 def usage():
@@ -65,6 +65,7 @@ def main():
     config = None
     execute = None
     out_commands = 'merge.xsync'
+    use_timestamps = False
     for opt, arg in optlist:
         if(opt == '-h'):
             usage()
@@ -76,6 +77,8 @@ def main():
             version()
         if(opt == '-w'):
             out_commands = arg
+        if(opt == '-T'):
+            use_timestamps = True
 
     if config is None:
         print("Expected config file")
@@ -86,7 +89,7 @@ def main():
     mirror = ModuleFactory.new(mirror_config)
 
     if(execute is None):
-        lib.config.generate_commands(out_commands, reference, mirror)
+        lib.config.generate_commands(out_commands, reference, mirror, use_timestamps)
     else:
         commands = lib.config.parse_commands(execute)
         execute_commands(commands, reference, mirror)
