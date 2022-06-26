@@ -115,7 +115,7 @@ class Module:
                 self.port,
                 path),
                 shell=True)
-        return ["{}{}".format(path, s) for s in raw.decode('utf-8').split("\n") if len(s) > 0]
+        return ["{}{}".format(path, s) for s in raw.decode('utf-8').split("\n") if len(s) > 0 and s != '.' and s != '..']
 
     def _rlist(self, path, cached=None):
         this_depth = self._list(path) if cached is None else cached
