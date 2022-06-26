@@ -15,9 +15,15 @@
 # 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+from lib.factory import ModuleFactory
+
 class Module:
     def __init__(self, config):
       pass
 
-def new(config):
-    return Module(config)
+    @classmethod
+    def new(cls, config):
+        return Module(config)
+
+ModuleFactory.register('sftp', Module)

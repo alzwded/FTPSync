@@ -19,6 +19,7 @@ import subprocess
 import re
 import os.path
 import dateutil.parser
+from lib.factory import ModuleFactory
 
 class Module:
     def __init__(self, config):
@@ -39,5 +40,8 @@ class Module:
         tm = dateutil.parser.parse(subprocess.check_output(['stat', '--format', '%y', '{}{}'.format(self.path, path)]).decode('utf-8'))
         return sz, tm
 
-def new(config):
-    return Module(config)
+    @classmethod
+    def new(cls, config):
+        return Module(config)
+
+ModuleFactory.register('file', Module)

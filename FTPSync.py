@@ -19,9 +19,7 @@
 import sys
 import os
 import getopt
-import modules.ftp
-import modules.file
-import modules.sftp
+from lib.factory import ModuleFactory
 import lib.config
 
 #ftp_mod = modules.ftp.instance()
@@ -29,14 +27,6 @@ import lib.config
 #file_mod = modules.file.instance()
 
 ARGS = 'c:h'
-
-def module_factory(config):
-    mymodules = {
-        'ftp': modules.ftp,
-        'sftp': modules.sftp,
-        'file': modules.file
-    }
-    return mymodules[config['protocol']].new(config)
 
 def usage():
     global ARGS
@@ -66,15 +56,15 @@ def main():
         print("Expected config file")
         usage()
 
-    remote_config, mirror_config = lib.config.parse_config(config)
-    remote = module_factory(remote_config)
-    mirror = module_factory(mirror_config)
+    reference_config, mirror_config = lib.config.parse_config(config)
+    reference = ModuleFactory.new(reference_config)
+    mirror = ModuleFactory.new(mirror_config)
 
-    #print(repr(remote.tree()))
+    #print(repr(reference.tree()))
     #print(repr(mirror.tree()))
 
-    for f in remote.tree():
-        print(repr({'file': f, 'stats': remote.stat(f)}))
+    for f in reference.tree():
+        print(repr({'file': f, 'stats': reference.stat(f)}))
     for f in mirror.tree():
         print(repr({'file': f, 'stats': mirror.stat(f)}))
 

@@ -18,6 +18,7 @@
 import subprocess
 import dateutil.parser
 import re
+from lib.factory import ModuleFactory
 
 class Module:
     def __init__(self, config):
@@ -36,7 +37,7 @@ class Module:
   port: {}
   path: {}
   user: {}
-  password: {}""".format(self.host, self.port, self.path, self.user, self.password))
+  password: ********""".format(self.host, self.port, self.path, self.user))
 
     def _format_user(self):
         if(self.user is None and self.password is None):
@@ -106,7 +107,9 @@ class Module:
                 continue
 
         return sz, tm
-        
 
-def new(config):
-    return Module(config)
+    @classmethod
+    def new(cls, config):
+        return Module(config)
+
+ModuleFactory.register('ftp', Module)

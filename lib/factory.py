@@ -15,32 +15,20 @@
 # 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import configparser
 
-def _invalid_config():
-    print("""Example config file:
-    [Reference]
-    protocol=ftp
-    root=/folder1
-    host=server.lan
-    port=21
-    user=johndoe
-    password=badpassword
+import pkgutil
 
-    [Mirror]
-    protocol=sftp
-    root=~/mirrors/folder1
-    host=mars.lan
-    port=22
-    user=johndoe
-    key=~/.ssh/id_rsa
-""")
-    exit(1)
+class ModuleFactory:
+    modules = {}
 
-def parse_config(configpath):
-    config = configparser.ConfigParser()
-    config.read(configpath)
-    if(not config.has_section("Reference") or not config.has_section("Mirror")):
-        _invalid_config()
+    @classmethod
+    def new(cls, config):
+        return cls.modules[config['protocol']].new(config)
 
-    return (config['Reference'], config['Mirror'])
+    @classmethod
+    def register(cls, protocol, mod):
+        print("Registered {} module".format(protocol))
+        cls.modules[protocol] = mod
+
+for _, module, _ in pkgutil.iter_modules(['modules']):
+    _ = __import__('modules.{}'.format(module))
