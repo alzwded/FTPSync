@@ -91,13 +91,30 @@ def generate_commands(configpath, reference, mirror, use_timestamps=False):
             }
 
     with open(configpath, "w") as f:
+        f.write("""; File reference
+; ==============
+;
+; The Upload section lists files to be uploaded. They default to YES.
+; The Extra section informs you about extra files on the mirror.
+; The Merge section lists files which are different in terms of size or
+; (optionally) timestamp.
+;
+; Within each section, you'll see 'file = x', where x may be:
+; - s           skip this file
+; - !           copy/overwrite this file
+; - k           rename the file on the mirror appending a .1 (or .N),
+;               then proceed to copy the file from the reference
+
+""")
         f.write("[Upload]\n")
         for i in upload_set:
             f.write("{} = {}\n".format(i, OVERWRITE))
+        f.write("\n")
 
         f.write("[Extra]\n")
         for i in extra_set:
             f.write("{} = {}\n".format(i, SKIP))
+        f.write("\n")
 
         f.write("[Merge]\n")
         for k in differences:
