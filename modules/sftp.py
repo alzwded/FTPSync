@@ -17,9 +17,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import subprocess
-import dateutil.parser
 import re
 import os
+import time
 from lib.factory import ModuleFactory
 
 FOUR_MEG = 4 * 1024 * 1024
@@ -146,7 +146,7 @@ class Module:
                 '{}@{}'.format(self.user, self.host[7:]),
                 '-p', str(self.port),
                 '''stat -c '%s' '{}{}' '''.format(self.path, path)]).decode('utf-8'))
-        tm = dateutil.parser.parse(subprocess.check_output([
+        tm = time.gmtime(subprocess.check_output([
                 'ssh',
                 '-i', self.key,
                 '{}@{}'.format(self.user, self.host[7:]),

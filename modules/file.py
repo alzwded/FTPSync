@@ -18,7 +18,7 @@
 import subprocess
 import re
 import os.path
-import dateutil.parser
+import time
 from lib.factory import ModuleFactory
 
 FOUR_MEG = 1024 * 1024 * 4
@@ -84,7 +84,7 @@ class Module:
 
     def stat(self, path):
         sz = int(subprocess.check_output(['stat', '-c', '%s', '{}{}'.format(self.path, path)]).decode('utf-8'))
-        tm = dateutil.parser.parse(subprocess.check_output(['stat', '-c', '%Y', '{}{}'.format(self.path, path)]).decode('utf-8'))
+        tm = time.gmtime(subprocess.check_output(['stat', '-c', '%Y', '{}{}'.format(self.path, path)]).decode('utf-8'))
         print(repr(('{}{}'.format(self.path, path), sz, tm)))
         return sz, tm
 
