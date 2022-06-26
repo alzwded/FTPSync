@@ -26,12 +26,29 @@ import lib.config
 #sftp_mod = modules.sftp.instance()
 #file_mod = modules.file.instance()
 
-ARGS = 'c:h'
+ARGS = 'c:hvx:'
+VERSION = '0.1'
 
 def usage():
     global ARGS
     print("""Usage: {} -{}""".format(sys.argv[0], ARGS))
     exit(1)
+
+def version():
+    print("""FTPSync {}""".format(VERSION))
+    exit(1)
+
+def generate_commands(reference, mirror):
+    #print(repr(reference.tree()))
+    #print(repr(mirror.tree()))
+
+    for f in reference.tree():
+        print(repr({'file': f, 'stats': reference.stat(f)}))
+    for f in mirror.tree():
+        print(repr({'file': f, 'stats': mirror.stat(f)}))
+
+def execute_commands(commands, reference, mirror):
+    raise Exception('not implemented')
 
 def main():
     global ARGS
@@ -46,11 +63,16 @@ def main():
         usage()
 
     config = None
+    execute = None
     for opt, arg in optlist:
         if(opt == '-h'):
             usage()
         if(opt == '-c'):
             config = arg
+        if(opt == '-x'):
+            execute = arg
+        if(opt == '-v'):
+            version()
 
     if config is None:
         print("Expected config file")
@@ -60,13 +82,12 @@ def main():
     reference = ModuleFactory.new(reference_config)
     mirror = ModuleFactory.new(mirror_config)
 
-    #print(repr(reference.tree()))
-    #print(repr(mirror.tree()))
+    if(execute is None):
+        generate_commands(reference, mirror)
+    else:
+        commands = lib.config.parse_commands(execute)
+        execute_commands(commands, reference, mirror)
 
-    for f in reference.tree():
-        print(repr({'file': f, 'stats': reference.stat(f)}))
-    for f in mirror.tree():
-        print(repr({'file': f, 'stats': mirror.stat(f)}))
 
 if __name__ == "__main__":
     main()

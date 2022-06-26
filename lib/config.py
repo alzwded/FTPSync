@@ -44,3 +44,6 @@ def parse_config(configpath):
         _invalid_config()
 
     return (config['Reference'], config['Mirror'])
+
+def parse_commands(commandspath):
+    raise Exception('not implemented')
