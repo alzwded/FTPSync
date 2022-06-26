@@ -64,6 +64,7 @@ def main():
 
     config = None
     execute = None
+    out_commands = 'merge.xsync'
     for opt, arg in optlist:
         if(opt == '-h'):
             usage()
@@ -83,7 +84,7 @@ def main():
     mirror = ModuleFactory.new(mirror_config)
 
     if(execute is None):
-        generate_commands(reference, mirror)
+        lib.config.generate_commands(out_commands, reference, mirror)
     else:
         commands = lib.config.parse_commands(execute)
         execute_commands(commands, reference, mirror)
