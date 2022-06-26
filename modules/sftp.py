@@ -104,7 +104,7 @@ class Module:
   key: {}""".format(self.host, self.port, self.path, self.user, self.key))
 
     def _format_user(self):
-        return '''-u '{}' -key '{}' '''.format(self.user, self.key)
+        return '''-u '{}:' --key '{}' '''.format(self.user, self.key)
 
     def _list(self, path):
         if(path[-1] != '/'):
