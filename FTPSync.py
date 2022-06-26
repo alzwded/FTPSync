@@ -26,7 +26,7 @@ import lib.config
 #sftp_mod = modules.sftp.instance()
 #file_mod = modules.file.instance()
 
-ARGS = 'c:hvx:'
+ARGS = 'c:hvx:w:'
 VERSION = '0.1'
 
 def usage():
@@ -74,6 +74,8 @@ def main():
             execute = arg
         if(opt == '-v'):
             version()
+        if(opt == '-w'):
+            out_commands = arg
 
     if config is None:
         print("Expected config file")
