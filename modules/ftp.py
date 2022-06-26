@@ -170,6 +170,7 @@ class Module:
                 tm = dateutil.parser.parse(maTIME[1])
                 continue
 
+        print('ftp: ' + repr(('{}{}'.format(self.path, path), sz, tm)))
         return sz, tm
 
     def open(self, path):

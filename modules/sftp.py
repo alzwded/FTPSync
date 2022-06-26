@@ -19,7 +19,7 @@
 import subprocess
 import re
 import os
-import time
+from datetime import datetime
 from lib.factory import ModuleFactory
 
 FOUR_MEG = 4 * 1024 * 1024
@@ -146,13 +146,13 @@ class Module:
                 '{}@{}'.format(self.user, self.host[7:]),
                 '-p', str(self.port),
                 '''stat -c '%s' '{}{}' '''.format(self.path, path)]).decode('utf-8'))
-        tm = time.gmtime(int(subprocess.check_output([
+        tm = datetime.fromtimestamp(int(subprocess.check_output([
                 'ssh',
                 '-i', self.key,
                 '{}@{}'.format(self.user, self.host[7:]),
                 '-p', str(self.port),
                 '''stat -c '%Y' '{}{}' '''.format(self.path, path)]).decode('utf-8')))
-        print(repr(('{}{}'.format(self.path, path), sz, tm)))
+        print('sftp: ' + repr(('{}{}'.format(self.path, path), sz, tm)))
         return sz, tm
 
     def open(self, path):

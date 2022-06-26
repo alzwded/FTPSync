@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import configparser
+from lib.ftb import FormatTB
+import sys
 
 def _invalid_config():
     print("""Example config file:
@@ -68,13 +70,19 @@ def generate_commands(configpath, reference, mirror, use_timestamps=False):
         try:
             ref_sz, ref_tm = reference.stat(i)
             ref_tm = ref_tm.strftime('%x %X')
-        except:
+        except Exception as err:
+            _, _, exc_traceback = sys.exc_info()
+            print(err)
+            print(FormatTB(exc_traceback))
             ref_sz = 0
             ref_tm = 'missing'
         try:
             mir_sz, mir_tm = mirror.stat(i)
             mir_tm = mir_tm.strftime('%x %X')
-        except:
+        except Exception as err:
+            _, _, exc_traceback = sys.exc_info()
+            print(err)
+            print(FormatTB(exc_traceback))
             mir_sz = 0
             mir_tm = 'missing'
 
