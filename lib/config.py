@@ -104,8 +104,13 @@ def generate_commands(configpath, reference, mirror, use_timestamps=False):
 ; - !           copy/overwrite this file
 ; - k           rename the file on the mirror appending a .1 (or .N),
 ;               then proceed to copy the file from the reference
+;
+; Reference was {}
+; Mirror was {}
 
-""")
+""".format(
+                reference.location,
+                mirror.location))
         f.write("[Upload]\n")
         for i in upload_set:
             f.write("{} = {}\n".format(i, OVERWRITE))

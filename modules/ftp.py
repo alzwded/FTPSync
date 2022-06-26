@@ -18,6 +18,7 @@
 import subprocess
 import dateutil.parser
 import re
+import os
 from lib.factory import ModuleFactory
 
 FOUR_MEG = 4 * 1024 * 1024
@@ -93,6 +94,7 @@ class Module:
         self.path =  config['path'] if 'path' in config else '/'
         if(self.path[-1] != '/'):
             self.path += '/'
+        self.location = '{}:{}{}'.format(self.host, self.port, self.path)
 
         print("""FTP module initialized:
   host: {}
@@ -173,8 +175,27 @@ class Module:
     def open(self, path):
         return FileHandle(self, path)
 
-    def rename(self, renfro):
-        raise Exception('not implemented')
+    def rename(self, path):
+        if(path[-1] == '/'):
+            raise Exception('{} ending in / was unexpected'.format(path))
+        fullpath = '{}{}'.format(self.path, path)
+        d = '{}/'.format(os.path.dirname(fullpath))
+        localfiles = set(self._list(d))
+        i = 1
+        while('{}{}.{}'.format(self.path, path, i) in localfiles):
+            i += 1
+        renfro = '{}{}'.format(self.path, path)
+        rento = '{}{}.{}'.format(self.path, path, i)
+
+        print('will rename {} to {}'.format(renfro, rento))
+
+        _ = subprocess.check_output("""curl -I {} -Q 'RNFR {}' -Q 'RNTO {}' --ftp-create-dirs "{}:{}/" """.format(
+                    self._format_user(),
+                    renfro,
+                    rento,
+                    self.host,
+                    self.port),
+                shell=True)
 
     @classmethod
     def new(cls, config):

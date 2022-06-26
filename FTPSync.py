@@ -21,6 +21,7 @@ import os
 import getopt
 import functools
 import time
+import traceback
 from lib.factory import ModuleFactory
 import lib.config
 
@@ -52,7 +53,7 @@ def generate_commands(reference, mirror):
         print(repr({'file': f, 'stats': mirror.stat(f)}))
 
 def upload_file(i, reference, mirror):
-    print('Uploading {} from {} to {}'.format(i, reference.host, mirror.host))
+    print('Uploading {} from {} to {}'.format(i, reference.location, mirror.location))
     refh = reference.open(i)
     mirh = mirror.open(i)
     tries_left = DEFAULT_TRIES
@@ -60,6 +61,7 @@ def upload_file(i, reference, mirror):
         tries_left -= 1
         try:
             refh.drain_to(mirh)
+            break
         except Exception as err:
             print(err)
             if tries_left > 0:
@@ -95,8 +97,22 @@ def execute_commands(commands, reference, mirror):
                     log.append('ERROR: failed to MERGE=! {} last reason {} traceback {}'.format(i, err, exc_traceback))
             elif(action == 'k'):
                 try:
-                    print('renaming {} on {}'.format(i, mirror.host))
-                    mirror.rename(i)
+                    print('renaming {} on {}'.format(i, mirror.location))
+                    ntries = DEFAULT_TRIES
+                    while(ntries > 0):
+                        ntries -= 1
+                        try: 
+                            mirror.rename(i)
+                            break
+                        except Exception as err:
+                            _, _, exc_traceback = sys.exc_info()
+                            print(err)
+                            print(traceback.format_tb(exc_traceback))
+                            if(ntries > 0):
+                                print('trying {} more times after {}s'.format(ntries, DEFAULT_SECONDS))
+                                time.sleep(DEFAULT_SECONDS)
+                            else:
+                                raise err
                 except Exception as err:
                     _, _, exc_traceback = sys.exc_info()
                     log.append('ERROR: failed to RENAME {} last reason {} traceback {}'.format(i, err, exc_traceback))

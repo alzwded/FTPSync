@@ -70,7 +70,7 @@ class FileHandle:
 class Module:
     def __init__(self, config):
       self.path = os.path.abspath(config['path'])
-      self.host = 'localhost'
+      self.location = 'file://localhost{}'.format(self.path)
       if(self.path[-1] != '/'):
         self.path += '/'
       print("""FILE module initialized:
