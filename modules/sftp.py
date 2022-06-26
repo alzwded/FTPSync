@@ -16,14 +16,165 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import subprocess
+import dateutil.parser
+import re
+import os
 from lib.factory import ModuleFactory
+
+FOUR_MEG = 4 * 1024 * 1024
+
+class FileHandle:
+    def __init__(self, module, path):
+        self.m = module
+        self.path = path
+        self.fullpath = '{}{}'.format(self.m.path, path)
+        if(self.fullpath[-1] == '/'):
+            raise Exception('the path arg should not end in /, but got {}'.format(path))
+        self.sz = None
+        self.offset = 0
+
+    def _format_C(cls, offset):
+        if(offset == 0):
+            return ''
+        else:
+            return '-C {}'.format(offset)
+
+    def write(self, offset, data):
+        _ = subprocess.run("""curl --ftp-create-dirs -T - {} {} "{}:{}{}" """.format(
+                    self._format_C(offset),
+                    self.m._format_user(),
+                    self.m.host,
+                    self.m.port,
+                    self.fullpath),
+                shell=True,
+                check=True,
+                input=data,
+                capture_output=True)
+        self.offset += len(data)
+
+    def rewind(self):
+        self.offset = 0
+
+    def _format_bytes(self, offset):
+        toread = FOUR_MEG if offset + FOUR_MEG < self.sz else self.sz % FOUR_MEG
+        start = offset
+        end = offset + toread
+        return '-r {}-{}'.format(start, end)
+
+    def drain_to(self, sink):
+        if(self.sz is None):
+            self.sz, _ = self.m.stat(self.path)
+
+        # don't start at 0 in case we're retrying
+        offset = sink.offset
+
+        nblocks = self.sz / FOUR_MEG + (1 if ((self.sz % FOUR_MEG) == 0) else 0);
+        nblocks -= offset / FOUR_MEG
+
+        while(nblocks > 0):
+            data = subprocess.check_output("""curl {} {} "{}:{}{}" """.format(
+                        self.m._format_user(),
+                        self._format_bytes(offset),
+                        self.m.host,
+                        self.m.port,
+                        self.fullpath),
+                    shell=True)
+            sink.write(offset, data)
+            offset += FOUR_MEG
+            nblocks -= 1
 
 class Module:
     def __init__(self, config):
-      pass
+        self.host = 'sftp://{}'.format(config['host'])
+        if(self.host[-1:] == '/'):
+            self.host = self.host[0:-1]
+        self.port =  config['port'] if 'port' in config else 22
+        self.user =  config['user'] if 'user' in config else os.getlogin()
+        self.key = config['key'] if 'key' in config else '~/.ssh/id_rsa'
+        self.path =  config['path'] if 'path' in config else '/'
+        if(self.path[-1] != '/'):
+            self.path += '/'
+
+        print("""SFTP module initialized:
+  host: {}
+  port: {}
+  path: {}
+  user: {}
+  key: {}""".format(self.host, self.port, self.path, self.user, self.key))
+
+    def _format_user(self):
+        return '''-u '{}' -key '{}' '''.format(self.user, self.key)
+
+    def _list(self, path):
+        if(path[-1] != '/'):
+            raise Exception("the path arg to this method should have ended in /, but got {}".format(path))
+        raw = subprocess.check_output("""curl -l {} "{}:{}{}" """.format(
+                self._format_user(),
+                self.host,
+                self.port,
+                path),
+                shell=True)
+        return ["{}{}".format(path, s) for s in raw.decode('utf-8').split("\n") if len(s) > 0]
+
+    def _rlist(self, path, cached=None):
+        this_depth = self._list(path) if cached is None else cached
+        rval = []
+        for p in this_depth:
+            try:
+                rpath = '{}/'.format(p)
+                child = self._list(rpath)
+                rval += self._rlist(rpath, child)
+            except Exception as err:
+                print(repr(err))
+                rval.append(p)
+        return rval
+
+    def tree(self):
+        if(self.path[-1] != '/'):
+            raise Exception('self.path should have ended in /!')
+        skip = len(self.path)
+        return [s[skip:] for s in self._rlist(self.path)]
+
+    def stat(self, path):
+        if(path[-1] == '/'):
+            raise 'did not expect path to end in /'
+        sz = int(subprocess.check_output([
+                'ssh',
+                '-i', self.key,
+                '{}@{}'.format(self.user, self.host),
+                '-p', self.port,
+                '''stat --format '%s' '{}{}' '''.format(self.path, path)]).decode('utf-8'))
+        tm = dateutil.parser.parse(subprocess.check_output([
+                'ssh',
+                '-i', self.key,
+                '{}@{}'.format(self.user, self.host),
+                '-p', self.port,
+                '''stat --format '%y' '{}{}' '''.format(self.path, path)]).decode('utf-8'))
+        print(repr(('{}{}'.format(self.path, path), sz, tm)))
+        return sz, tm
+
+    def open(self, path):
+        return FileHandle(self, path)
+
+    def rename(self, path):
+        i = 1
+        renfro = '{}{}'.format(self.path, path)
+        while(_remoteexists('{}.{}'.format(fullpath, i))):
+            i += 1
+        rento = '{}.{}'.format(renfro, i)
+
+        print('will rename {} to {}'.format(renfro, rento))
+        _ = subprocess.check_output([
+                'ssh',
+                '-i', self.key,
+                '{}@{}'.format(self.user, self.host),
+                '-p', self.port,
+                '''mv '{}' '{}' '''.format(renfro, rento)])
 
     @classmethod
     def new(cls, config):
         return Module(config)
+
 
 ModuleFactory.register('sftp', Module)

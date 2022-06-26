@@ -29,7 +29,7 @@ def _invalid_config():
 
     [Mirror]
     protocol=sftp
-    root=~/mirrors/folder1
+    root=/home/user/mirrors/folder1
     host=mars.lan
     port=22
     user=johndoe
