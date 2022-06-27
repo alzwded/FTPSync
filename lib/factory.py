@@ -17,6 +17,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import pkgutil
+import os.path
 
 class ModuleFactory:
     modules = {}
@@ -30,5 +31,5 @@ class ModuleFactory:
         print("Registered {} module".format(protocol))
         cls.modules[protocol] = mod
 
-for _, module, _ in pkgutil.iter_modules(['modules']):
+for _, module, _ in pkgutil.iter_modules([os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'modules')]):
     _ = __import__('modules.{}'.format(module))
