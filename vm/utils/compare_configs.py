@@ -21,8 +21,10 @@ import sys
 
 def diff(a, b):
     ca = configparser.ConfigParser()
+    ca.optionxform = str
     ca.read(a)
     cb = configparser.ConfigParser()
+    cb.optionxform = str
     cb.read(b)
 
     for s in ['Upload', 'Merge', 'Extra']:

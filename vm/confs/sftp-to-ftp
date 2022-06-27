@@ -1,0 +1,15 @@
+[Reference]
+protocol = sftp
+user = alpine
+key = /home/alpine/.ssh/id_ed25519
+port = 22
+host = localhost
+path = /home/alpine/FTPSync/vm/scratch/reference/folder1
+
+[Mirror]
+path = /FTPSync/vm/scratch/mirror/folder1
+host = localhost
+protocol = ftp
+user = alpine
+password = alpine
+port = 21

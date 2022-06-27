@@ -43,3 +43,7 @@ For a sync,
 - transfers >N MB between two FTP sites should grab N MB chunks at a time using -r/-C
 - filesystem driver, remote ftp driver, sftp driver (this has different commands for delete, rename, stat)
 - let's write a giant bash script?
+
+
+
+Apparently resume doesn't seem to properly work anywhere. I might just change the interface to sound like "append-only" or something like that.

@@ -40,10 +40,13 @@ class FileHandle:
     def write(self, offset, data):
         d = os.path.dirname(self.fullpath)
         _ = subprocess.check_output(['mkdir', '-p', d])
-        with open(self.fullpath, 'wb') as f:
-            f.seek(0, SEEK_SET)
-            f.truncate(offset)
-            f.seek(offset, SEEK_SET)
+        if(offset == 0 and os.path.exists(self.fullpath)):
+            os.remove(self.fullpath)
+        with open(self.fullpath, 'ab') as f:
+            #f.seek(0, SEEK_SET)
+            #print('truncating to {}'.format(offset))
+            #f.truncate(offset) # WTF this just makes the file full of nulls
+            #f.seek(offset, SEEK_SET)
             f.write(data)
             self.offset += len(data)
 
@@ -54,17 +57,20 @@ class FileHandle:
         # don't start at 0 in case we're retrying
         offset = sink.offset
 
-        nblocks = self.sz / FOUR_MEG + (1 if ((self.sz % FOUR_MEG) == 0) else 0);
-        nblocks -= offset / FOUR_MEG
+        nblocks = self.sz // FOUR_MEG + (1 if ((self.sz % FOUR_MEG) != 0) else 0);
+        nblocks -= offset // FOUR_MEG
 
         with open(self.fullpath, 'rb') as f:
             while(nblocks > 0):
-                toread = FOUR_MEG if offset + FOUR_MEG < self.sz else self.sz % FOUR_MEG
+                print('blocks left {} sz {}'.format(nblocks, self.sz))
+                toread = FOUR_MEG if offset + FOUR_MEG <= self.sz else self.sz % FOUR_MEG
+                print('writing at offset {}'.format(offset))
                 f.seek(offset, SEEK_SET)
                 data = f.read(toread)
                 sink.write(offset, data)
-                offset += FOUR_MEG
+                offset += len(data)
                 nblocks -= 1
+        print('Wrote {} out of {}'.format(offset, self.sz))
 
 
 class Module:

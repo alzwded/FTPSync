@@ -6,3 +6,6 @@ __pycache__
 vm/*.iso
 vm/*.img
 vm/scratch
+log
+*log
+*.log

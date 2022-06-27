@@ -19,6 +19,7 @@
 import subprocess
 import re
 import os
+import urllib.parse
 from datetime import datetime
 from lib.factory import ModuleFactory
 
@@ -41,12 +42,20 @@ class FileHandle:
             return '-C {}'.format(offset)
 
     def write(self, offset, data):
+        if(self.offset == 0):
+            _ = subprocess.check_output([
+                'ssh',
+                '-i', self.m.key,
+                '{}@{}'.format(self.m.user, self.m.host[7:]),
+                '-p', str(self.m.port),
+                '''rm -f '{}' '''.format(self.fullpath)])
         _ = subprocess.run("""curl --ftp-create-dirs -T - {} {} "{}:{}{}" """.format(
-                    self._format_C(offset),
+                    '-a',
+                    #self._format_C(offset), # getting error unsupported REST
                     self.m._format_user(),
                     self.m.host,
                     self.m.port,
-                    self.fullpath),
+                    urllib.parse.quote(self.fullpath)),
                 shell=True,
                 check=True,
                 input=data,
@@ -57,7 +66,7 @@ class FileHandle:
         self.offset = 0
 
     def _format_bytes(self, offset):
-        toread = FOUR_MEG if offset + FOUR_MEG < self.sz else self.sz % FOUR_MEG
+        toread = FOUR_MEG-1 if offset + FOUR_MEG <= self.sz else self.sz % FOUR_MEG
         start = offset
         end = offset + toread
         return '-r {}-{}'.format(start, end)
@@ -69,16 +78,17 @@ class FileHandle:
         # don't start at 0 in case we're retrying
         offset = sink.offset
 
-        nblocks = self.sz / FOUR_MEG + (1 if ((self.sz % FOUR_MEG) == 0) else 0);
-        nblocks -= offset / FOUR_MEG
+        nblocks = self.sz // FOUR_MEG + (1 if ((self.sz % FOUR_MEG) != 0) else 0);
+        nblocks -= offset // FOUR_MEG
 
         while(nblocks > 0):
+            print('blocks left {} sz {}'.format(nblocks, self.sz))
             data = subprocess.check_output("""curl {} {} "{}:{}{}" """.format(
                         self.m._format_user(),
                         self._format_bytes(offset),
                         self.m.host,
                         self.m.port,
-                        self.fullpath),
+                        urllib.parse.quote(self.fullpath)),
                     shell=True)
             sink.write(offset, data)
             offset += FOUR_MEG
@@ -114,7 +124,7 @@ class Module:
                 self._format_user(),
                 self.host,
                 self.port,
-                path),
+                urllib.parse.quote(path)),
                 shell=True)
         return ["{}{}".format(path, s) for s in raw.decode('utf-8').split("\n") if len(s) > 0 and s != '.' and s != '..']
 

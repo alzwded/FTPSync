@@ -19,6 +19,7 @@ import subprocess
 import dateutil.parser
 import re
 import os
+import urllib.parse
 from lib.factory import ModuleFactory
 
 FOUR_MEG = 4 * 1024 * 1024
@@ -40,12 +41,23 @@ class FileHandle:
             return '-C {}'.format(offset)
 
     def write(self, offset, data):
+        if(self.offset == 0):
+            _ = subprocess.run("""curl -I -Q '-DELE {}' {} "{}:{}{}" """.format(
+                self.fullpath,
+                self.m._format_user(),
+                self.m.host,
+                self.m.port,
+                urllib.parse.quote(self.fullpath)),
+                shell=True,
+                check=False,
+                capture_output=False)
         _ = subprocess.run("""curl --ftp-pasv --ftp-create-dirs -T - {} {} "{}:{}{}" """.format(
-                    self._format_C(offset),
+                    '-a',
+                    #self._format_C(offset), # getting unsupported REST
                     self.m._format_user(),
                     self.m.host,
                     self.m.port,
-                    self.fullpath),
+                    urllib.parse.quote(self.fullpath)),
                 shell=True,
                 check=True,
                 input=data,
@@ -56,7 +68,7 @@ class FileHandle:
         self.offset = 0
 
     def _format_bytes(self, offset):
-        toread = FOUR_MEG if offset + FOUR_MEG < self.sz else self.sz % FOUR_MEG
+        toread = FOUR_MEG-1 if offset + FOUR_MEG <= self.sz else self.sz % FOUR_MEG
         start = offset
         end = offset + toread
         return '-r {}-{}'.format(start, end)
@@ -68,16 +80,17 @@ class FileHandle:
         # don't start at 0 in case we're retrying
         offset = sink.offset
 
-        nblocks = self.sz / FOUR_MEG + (1 if ((self.sz % FOUR_MEG) == 0) else 0);
-        nblocks -= offset / FOUR_MEG
+        nblocks = self.sz // FOUR_MEG + (1 if ((self.sz % FOUR_MEG) != 0) else 0);
+        nblocks -= offset // FOUR_MEG
 
         while(nblocks > 0):
+            print('blocks left {} sz {}'.format(nblocks, self.sz))
             data = subprocess.check_output("""curl --ftp-pasv {} {} "{}:{}{}" """.format(
                         self.m._format_user(),
                         self._format_bytes(offset),
                         self.m.host,
                         self.m.port,
-                        self.fullpath),
+                        urllib.parse.quote(self.fullpath)),
                     shell=True)
             sink.write(offset, data)
             offset += FOUR_MEG
@@ -117,7 +130,7 @@ class Module:
                 self._format_user(),
                 self.host,
                 self.port,
-                path),
+                urllib.parse.quote(path)),
                 shell=True)
         return ["{}{}".format(path, s) for s in raw.decode('utf-8').split("\n") if len(s) > 0 and s != '.' and s != '..']
 
@@ -144,12 +157,11 @@ class Module:
         if(path[-1] == '/'):
             raise 'did not expect path to end in /'
         # TODO be resilient and log errors to a log file
-        lines = subprocess.check_output("""curl -I --ftp-pasv {} "{}:{}{}{}" """.format(
+        lines = subprocess.check_output("""curl -I --ftp-pasv {} "{}:{}{}" """.format(
                 self._format_user(),
                 self.host,
                 self.port,
-                self.path,
-                path),
+                urllib.parse.quote('{}{}'.format(self.path, path))),
                 shell=True).decode('utf-8').split("\n")
         
         #Last-Modified: Wed, 13 Nov 2019 20:20:03 GMT

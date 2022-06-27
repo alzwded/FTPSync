@@ -60,7 +60,7 @@ for t in tests/*.sh ; do
         1)
             FAILED_TESTS[$FAILED]="$t $conf"
             RAN=`expr $RAN + 1`
-            FAILED=`expr $OK + 1`
+            FAILED=`expr $FAILED + 1`
             echo FAILED
             ;;
         2)

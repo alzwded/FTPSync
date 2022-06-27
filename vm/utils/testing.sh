@@ -65,22 +65,22 @@ T_big_modification() {
 }
 
 T_check_modified() {
-    grep "${2-modified}" $1 && exit 0 || exit 1
+    grep "${2-modified}" $1 && return 0 || return 1
 }
 
 T_check_same() {
-    diff "reference/$1" "mirror/$2" > /dev/null 2>&1 && exit 0 || exit 1
+    diff "reference/$1" "mirror/$1" > /dev/null 2>&1 && return 0 || return 1
 }
 
 T_check_different() {
-    diff "reference/$1" "mirror/$2" > /dev/null 2>&1 && exit 1 || exit 0
+    diff "reference/$1" "mirror/$1" > /dev/null 2>&1 && return 1 || return 0
 }
 
 T_check_missing() {
-    test -e "$1" && exit 1 || exit 0
+    test -e "$1" && return 1 || return 0
 }
 
 T_compare_configs() {
     "$VMDIR/utils/compare_configs.py" "$1" "$2"
-    exit $?
+    return $?
 }

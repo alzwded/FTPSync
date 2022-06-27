@@ -41,6 +41,7 @@ def _invalid_config():
 
 def parse_config(configpath):
     config = configparser.ConfigParser()
+    config.optionxform = str
     config.read(configpath)
     if(not config.has_section("Reference") or not config.has_section("Mirror")):
         _invalid_config()
@@ -137,6 +138,7 @@ def generate_commands(configpath, reference, mirror, use_timestamps=False):
 
 def parse_commands(commandspath):
     config = configparser.ConfigParser()
+    config.optionxform = str
     config.read(commandspath)
     return config
         
