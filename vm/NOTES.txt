@@ -13,6 +13,7 @@ qemu-img create -f qcow2 alpine.img 4G
 
 qemu-system-x86_64 -machine 'q35,accel=kvm' -accel kvm -boot order=dc -m 1G -hda alpine.img -cdrom alpine-standard-3.16.0-x86_64.iso
 qemu-system-x86_64 -machine 'q35,accel=kvm' -accel kvm -boot order=c -m 1G -hda alpine.img 
+qemu-system-x86_64 -machine 'q35,accel=kvm' -accel kvm -boot order=c -m 1G -hda alpine.img  -net nic -net user,hostfwd=tcp::10022-:22
 ctrl-alt-- and ctrl-alt-+ to shrink/grow screen
 
 Guest
