@@ -5,3 +5,4 @@ __pycache__
 *.log
 vm/*.iso
 vm/*.img
+vm/scratch
