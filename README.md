@@ -80,8 +80,8 @@ Which writes `merge.xsync` (you can control the file name with `-w command_file_
 ; - k           rename the file on the mirror appending a .1 (or .N),
 ;               then proceed to copy the file from the reference
 ;
-; Reference was ftp://192.168.0.1:21/folder1/synctest/
-; Mirror was file://localhost/tmp/synctest
+; Reference was ftp://192.168.0.42:21/backup
+; Mirror was sftp://sftp.example.com:22/backup
 
 [Upload]
 a.1 = !
