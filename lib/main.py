@@ -65,6 +65,7 @@ def upload_file(i, reference, mirror):
             print(err)
             if tries_left > 0:
                 print('trying {} more times after {}s'.format(tries_left, DEFAULT_SECONDS))
+                mirh.ff()
                 time.sleep(DEFAULT_SECONDS)
             else:
                 print('giving up')

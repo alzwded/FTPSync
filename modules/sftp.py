@@ -65,6 +65,10 @@ class FileHandle:
     def rewind(self):
         self.offset = 0
 
+    def ff(self):
+        self.offset, _ = self.m.stat(self.path)
+        return self.offset
+
     def _format_bytes(self, offset):
         toread = FOUR_MEG-1 if offset + FOUR_MEG <= self.sz else self.sz % FOUR_MEG
         start = offset

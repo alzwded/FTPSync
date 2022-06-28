@@ -37,6 +37,10 @@ class FileHandle:
     def rewind(self):
         self.offset = 0
 
+    def ff(self):
+        self.offset, _ = self.m.stat(self.path)
+        return self.offset
+
     def write(self, offset, data):
         d = os.path.dirname(self.fullpath)
         _ = subprocess.check_output(['mkdir', '-p', d])
