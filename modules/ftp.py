@@ -206,12 +206,13 @@ class Module:
 
         print('will rename {} to {}'.format(renfro, rento))
 
-        _ = subprocess.check_output("""curl -I {} -Q 'RNFR {}' -Q 'RNTO {}' --ftp-create-dirs "{}:{}/" """.format(
+        _ = subprocess.check_output("""curl -v -I {} -Q '-RNFR {}' -Q '-RNTO {}' --ftp-create-dirs "{}:{}/" """.format(
                     self._format_user(),
-                    renfro,
-                    rento,
+                    renfro[1:],
+                    rento[1:],
                     self.host,
-                    self.port),
+                    self.port,
+                    self.path),
                 shell=True)
 
     @classmethod

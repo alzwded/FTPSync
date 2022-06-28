@@ -172,10 +172,21 @@ class Module:
     def open(self, path):
         return FileHandle(self, path)
 
+    def _remoteexists(self, fullpath):
+        cp = subprocess.run([
+                'ssh',
+                '-i', self.key,
+                '{}@{}'.format(self.user, self.host[7:]),
+                '-p', str(self.port),
+                '''test -e '{}' '''.format(fullpath)],
+                check=False,
+                capture_output=False)
+        return cp.returncode == 1
+
     def rename(self, path):
         i = 1
         renfro = '{}{}'.format(self.path, path)
-        while(_remoteexists('{}.{}'.format(fullpath, i))):
+        while(self._remoteexists('{}.{}'.format(renfro, i))):
             i += 1
         rento = '{}.{}'.format(renfro, i)
 

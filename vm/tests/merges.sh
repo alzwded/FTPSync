@@ -20,46 +20,51 @@
 SETUP() {
     cat - > expected.xsync  <<EOT
 [Upload]
-My Pictures/Holiday 2/photo.jpg.1 = !
-My Pictures/Holiday 2/photo.jpg = !
-My Pictures/Holiday 1/photo.jpg = !
 My Documents/Untitled 2.docx = !
-My Documents/Untitled 1.docx = !
-a = !
-My Pictures/Holiday 2/Videos/a smile.mp4 = !
-My Pictures/Holiday 2/Videos/seagull.mp4 = !
 
 [Extra]
+My Documents/Untitled 1.docx = s
 
 [Merge]
+a = s
+My Pictures/Holiday 2/Videos/a smile.mp4 = s
+My Pictures/Holiday 2/photo.jpg.1 = s
+My Pictures/Holiday 2/photo.jpg = s
+
 EOT
     cat - > execute.xsync <<EOT
 [Upload]
-My Pictures/Holiday 2/photo.jpg.1 = !
-My Pictures/Holiday 2/photo.jpg = !
-My Pictures/Holiday 1/photo.jpg = !
 My Documents/Untitled 2.docx = !
-My Documents/Untitled 1.docx = !
-a = !
-My Pictures/Holiday 2/Videos/a smile.mp4 = !
-My Pictures/Holiday 2/Videos/seagull.mp4 = !
 
 [Extra]
+My Documents/Untitled 1.docx = s
 
 [Merge]
+a = s
+My Pictures/Holiday 2/Videos/a smile.mp4 = !
+My Pictures/Holiday 2/photo.jpg.1 = s
+My Pictures/Holiday 2/photo.jpg = k
 EOT
-    rm -rf mirror && mkdir -p mirror/folder1
+    set -x
+    T_small_modification 'reference/folder1/a'
+    T_big_modification 'reference/folder1/My Pictures/Holiday 2/Videos/a smile.mp4'
+    T_small_modification 'reference/folder1/My Pictures/Holiday 2/photo.jpg.1'
+    T_small_modification 'mirror/folder1/My Pictures/Holiday 2/photo.jpg'
+    rm 'reference/folder1/My Documents/Untitled 1.docx'
+    rm 'mirror/folder1/My Documents/Untitled 2.docx'
 }
 
 CHECK() {
     set -x
-    T_check_same "folder1/a" || return 1
-    T_check_same "folder1/My Pictures/Holiday 1/photo.jpg" || return 1
+    T_check_different "folder1/a" || return 1
+    T_check_unmodified "mirror/folder1/a" || return 1
+    T_check_missing "reference/folder1/My Documents/Untitled 1.docx" || return 1
+    T_check_same "folder1/My Documents/Untitled 2.docx" || return 1
     T_check_same "folder1/My Pictures/Holiday 2/photo.jpg" || return 1
-    T_check_same "folder1/My Pictures/Holiday 2/photo.jpg.1" || return 1
+    T_check_different "folder1/My Pictures/Holiday 2/photo.jpg.1" || return 1
+    T_check_unmodified "mirror/folder1/My Pictures/Holiday 2/photo.jpg.1" || return 1
+    T_check_modified "mirror/folder1/My Pictures/Holiday 2/photo.jpg.2" || return 1
     T_check_same "folder1/My Pictures/Holiday 2/Videos/seagull.mp4" || return 1
     T_check_same "folder1/My Pictures/Holiday 2/Videos/a smile.mp4" || return 1
-    T_check_same "folder1/My Documents/Untitled 1.docx" || return 1
-    T_check_same "folder1/My Documents/Untitled 2.docx" || return 1
     return 0
 }

@@ -38,7 +38,7 @@ T_default_setup() {
     echo photo.jpg > "$DIR/folder1/My Pictures/Holiday 1/photo.jpg"
     mkdir "$DIR/folder1/My Pictures/Holiday 2"
     echo photo.jpg > "$DIR/folder1/My Pictures/Holiday 2/photo.jpg"
-    echo photo1.jpg > "$DIR/folder1/My Pictures/Holiday 2/photo1.jpg"
+    echo photo1.jpg > "$DIR/folder1/My Pictures/Holiday 2/photo.jpg.1"
     mkdir "$DIR/folder1/My Pictures/Holiday 2/Videos"
     T_make_20M_file "$DIR/folder1/My Pictures/Holiday 2/Videos/seagull.mp4"
     T_make_3_9M_file "$DIR/folder1/My Pictures/Holiday 2/Videos/a smile.mp4"
@@ -52,20 +52,23 @@ T_small_modification() {
     echo "modified $COUNTER" >> "$1"
     RVAL=$COUNTER
     COUNTER=`expr $COUNTER + 1`
-    return "modified $RVAL"
+    return $RVAL
 }
 
 T_big_modification() {
-    for (( i=0 ; $i < `expr 1024 \* 100` ; i=`expr $i + 1` )) {
-        echo "modified $COUNTER" >> "$1"
-    }
+    echo "modified $COUNTER" >> "$1"
+    dd if="$THETEMPFILE" of="$1" oflag=append bs=1024 count=2
     RVAL=$COUNTER
     COUNTER=`expr $COUNTER + 1`
-    return "modified $RVAL"
+    return $RVAL
 }
 
 T_check_modified() {
-    grep "${2-modified}" $1 && return 0 || return 1
+    grep "${2-modified}" "$1" && return 0 || return 1
+}
+
+T_check_unmodified() {
+    grep "${2-modified}" "$1" && return 1 || return 0
 }
 
 T_check_same() {

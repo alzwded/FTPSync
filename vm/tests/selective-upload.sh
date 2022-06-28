@@ -45,7 +45,7 @@ CHECK() {
     T_check_same "folder1/a" || return 1
     T_check_missing "mirror/folder1/My Pictures/Holiday 1/photo.jpg" || return 1
     T_check_same "folder1/My Pictures/Holiday 2/photo.jpg" || return 1
-    T_check_same "folder1/My Pictures/Holiday 2/photo1.jpg" || return 1
+    T_check_same "folder1/My Pictures/Holiday 2/photo.jpg.1" || return 1
     T_check_same "folder1/My Pictures/Holiday 2/Videos/seagull.mp4" || return 1
     T_check_same "folder1/My Pictures/Holiday 2/Videos/a smile.mp4" || return 1
     T_check_same "folder1/My Documents/Untitled 1.docx" || return 1
