@@ -78,13 +78,11 @@ make install
 # ^D no more root
 
 
-Scrt1
-crti
-ssp_nonshared
-
 # note: rsa doesn't seem to be allowed by default nowadays
 ssh-keygen -t ed25519
 cat ~/.ssh/id_ed25519.pub > ~/.ssh/authorized_keys
 chmod 600 ~/.ssh/authorized_keys
 
-clone the repo
+clone the repo in /home/alpine/FTPSync
+cd ~/FTPSync/vm
+./run_tests.sh
