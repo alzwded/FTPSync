@@ -36,7 +36,7 @@ dd if=/dev/urandom of="$THETEMPFILE" bs=4096 count=5120
 echo Done generating THETEMPFILE
 export THETEMPFILE
 
-for t in tests/*.sh ; do
+run_single_test() {
     echo '===================================================='
     echo $t
     echo '===================================================='
@@ -70,7 +70,19 @@ for t in tests/*.sh ; do
     done
     echo '===================================================='
     echo ''
-done
+}
+
+if [[ $# > 0 ]] ; then
+    echo running subset "$@"
+    for t in "$@" ; do
+        run_single_test $t
+    done
+else
+    echo running all tests
+    for t in tests/*.sh ; do
+        run_single_test $t
+    done
+fi
 
 echo $RAN tests ran
 echo $PASSED tests OK

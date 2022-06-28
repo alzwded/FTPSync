@@ -9,3 +9,5 @@ vm/scratch
 log
 *log
 *.log
+*.sw*
+*~
