@@ -62,6 +62,7 @@ run_single_test() {
             RAN=`expr $RAN + 1`
             FAILED=`expr $FAILED + 1`
             echo FAILED
+	    exit 1
             ;;
         2)
             ;;

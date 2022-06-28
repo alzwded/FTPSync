@@ -57,7 +57,7 @@ T_small_modification() {
 
 T_big_modification() {
     echo "modified $COUNTER" >> "$1"
-    dd if="$THETEMPFILE" of="$1" oflag=append bs=1024 count=2
+    dd if="$THETEMPFILE" of="$1" oflag=append conv=notrunc bs=1024 count=200
     RVAL=$COUNTER
     COUNTER=`expr $COUNTER + 1`
     return $RVAL

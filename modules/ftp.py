@@ -52,7 +52,7 @@ class FileHandle:
                 check=False,
                 capture_output=False)
         _ = subprocess.run("""curl --ftp-pasv --ftp-create-dirs -T - {} {} "{}:{}{}" """.format(
-                    '-a',
+                    '-a' if self.offset != 0 else '',
                     #self._format_C(offset), # getting unsupported REST
                     self.m._format_user(),
                     self.m.host,

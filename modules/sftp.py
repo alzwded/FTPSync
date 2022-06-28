@@ -44,12 +44,12 @@ class FileHandle:
     def write(self, offset, data):
         if(self.offset == 0):
             _ = subprocess.check_output([
-                'ssh',
+                'ssh', '-C',
                 '-i', self.m.key,
                 '{}@{}'.format(self.m.user, self.m.host[7:]),
                 '-p', str(self.m.port),
                 '''rm -f '{}' '''.format(self.fullpath)])
-        _ = subprocess.run("""curl --ftp-create-dirs -T - {} {} "{}:{}{}" """.format(
+        _ = subprocess.run("""curl --compressed-ssh --insecure --ftp-create-dirs -T - {} {} "{}:{}{}" """.format(
                     '-a',
                     #self._format_C(offset), # getting error unsupported REST
                     self.m._format_user(),
@@ -87,7 +87,7 @@ class FileHandle:
 
         while(nblocks > 0):
             print('blocks left {} sz {}'.format(nblocks, self.sz))
-            data = subprocess.check_output("""curl {} {} "{}:{}{}" """.format(
+            data = subprocess.check_output("""curl --compressed-ssh --insecure {} {} "{}:{}{}" """.format(
                         self.m._format_user(),
                         self._format_bytes(offset),
                         self.m.host,
@@ -124,7 +124,7 @@ class Module:
     def _list(self, path):
         if(path[-1] != '/'):
             raise Exception("the path arg to this method should have ended in /, but got {}".format(path))
-        raw = subprocess.check_output("""curl -l {} "{}:{}{}" """.format(
+        raw = subprocess.check_output("""curl --compressed-ssh --insecure -l {} "{}:{}{}" """.format(
                 self._format_user(),
                 self.host,
                 self.port,
@@ -155,13 +155,13 @@ class Module:
         if(path[-1] == '/'):
             raise 'did not expect path to end in /'
         sz = int(subprocess.check_output([
-                'ssh',
+                'ssh', '-C',
                 '-i', self.key,
                 '{}@{}'.format(self.user, self.host[7:]),
                 '-p', str(self.port),
                 '''stat -c '%s' '{}{}' '''.format(self.path, path)]).decode('utf-8'))
         tm = datetime.fromtimestamp(int(subprocess.check_output([
-                'ssh',
+                'ssh', '-C',
                 '-i', self.key,
                 '{}@{}'.format(self.user, self.host[7:]),
                 '-p', str(self.port),
@@ -174,14 +174,14 @@ class Module:
 
     def _remoteexists(self, fullpath):
         cp = subprocess.run([
-                'ssh',
+                'ssh', '-C',
                 '-i', self.key,
                 '{}@{}'.format(self.user, self.host[7:]),
                 '-p', str(self.port),
                 '''test -e '{}' '''.format(fullpath)],
                 check=False,
                 capture_output=False)
-        return cp.returncode == 1
+        return cp.returncode == 0
 
     def rename(self, path):
         i = 1
@@ -192,7 +192,7 @@ class Module:
 
         print('will rename {} to {}'.format(renfro, rento))
         _ = subprocess.check_output([
-                'ssh',
+                'ssh', '-C',
                 '-i', self.key,
                 '{}@{}'.format(self.user, self.host[7:]),
                 '-p', str(self.port),
