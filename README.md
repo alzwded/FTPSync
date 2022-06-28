@@ -123,6 +123,8 @@ So after you execute your transfer, it's a good idea to generate a report again 
 
 # Installing/Development/Testing
 
+FTPSync runs on Linux. Mostly Ubuntu and Alpine, I don't have others `:-)`.
+
 This relies on `curl` compiled `--with-libssh2 --with-openssl`. It also runs find, stat, mv and so on. It is written in python3 using whatever packages are available out of the box. The tests are bash and python scripts. Other than that, no other dependencies that I can think of.
 
 Protocols are handled by [modules](./modules). You can add new ones there (like a better sftp or an scp (for fun) or some other arcane telnet or whatever). The rest of the code just orchestrates diffs and transfers.
