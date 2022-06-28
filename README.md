@@ -91,6 +91,7 @@ b/c.4 = s
 b/c.5 = s
 
 [Merge]
+; ref = 200 20:06:22 26-05-2022 mir = 239 14:22:01 27-05-2022
 c/modified = s
 ```
 
@@ -103,6 +104,8 @@ The intention is that you review it and change the `!sk` characters to suit your
 The `[Extra]` section is informative and tells you which files exist on the mirror but not on your reference. This is informative. Remind me to add a flag to not report `[Extra]` in case you're using the mirror as a write only dump and relying on the `k` option to keep extra copies around `:-)`.
 
 The `[Upload]` section only does something if the action is `!`. `k` wouldn't make sense, and this section exists just to be informative that you have new files.
+
+The `[Merge]` section also lists the size and timestamp on the reference and mirror, respectively.
 
 After review, you can execute the batch:
 
