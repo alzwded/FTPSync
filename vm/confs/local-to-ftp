@@ -1,0 +1,11 @@
+[Reference]
+protocol = file
+path = reference/folder1
+
+[Mirror]
+path = /FTPSync/vm/scratch/mirror/folder1
+host = localhost
+protocol = ftp
+user = alpine
+password = alpine
+port = 21

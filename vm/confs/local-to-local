@@ -1,7 +1,0 @@
-[Reference]
-protocol = file
-path = reference/folder1
-
-[Mirror]
-protocol = file
-path = mirror/folder1

@@ -7,9 +7,5 @@ host = localhost
 path = /home/alpine/FTPSync/vm/scratch/reference/folder1
 
 [Mirror]
-path = /FTPSync/vm/scratch/mirror/folder1
-host = localhost
-protocol = ftp
-user = alpine
-password = alpine
-port = 21
+protocol = file
+path = mirror/folder1
