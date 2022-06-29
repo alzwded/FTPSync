@@ -2,6 +2,7 @@
 protocol = sftp
 user = alpine
 key = /home/alpine/.ssh/id_ed25519
+passphrase = alpine
 port = 22
 host = localhost
 path = /home/alpine/FTPSync/vm/scratch/reference/folder1

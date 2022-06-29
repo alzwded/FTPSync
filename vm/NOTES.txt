@@ -82,7 +82,10 @@ make install
 
 
 # note: rsa doesn't seem to be allowed by default nowadays
+# make sure to add passphrase
 ssh-keygen -t ed25519
+ssh-keygen -p -f ~/.ssh/id_ed25519.pub
+# don't have /etc/ssh/ssh_config AddKeysToAgent set to a time limit
 cat ~/.ssh/id_ed25519.pub > ~/.ssh/authorized_keys
 chmod 600 ~/.ssh/authorized_keys
 

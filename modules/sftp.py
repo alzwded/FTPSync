@@ -48,18 +48,14 @@ class FileHandle:
                 '-i', self.m.key,
                 '{}@{}'.format(self.m.user, self.m.host[7:]),
                 '-p', str(self.m.port),
-                '''rm -f '{}' '''.format(self.fullpath)])
-        _ = subprocess.run("""curl --compressed-ssh --insecure --ftp-create-dirs -T - {} {} "{}:{}{}" """.format(
-                    '-a',
-                    #self._format_C(offset), # getting error unsupported REST
-                    self.m._format_user(),
-                    self.m.host,
-                    self.m.port,
-                    urllib.parse.quote(self.fullpath)),
-                shell=True,
-                check=True,
-                input=data,
-                capture_output=True)
+                '''rm -f '{}' '''.format(self.fullpath)],
+                env=os.environ)
+        args = ["curl", "--compressed-ssh", "--insecure", "--ftp-create-dirs", "-T", "-", "-a", "-u", '{}:'.format(self.m.user), "--key", self.m.key]
+        if self.m.passphrase is not None:
+            args.append('--pass')
+            args.append(self.m.passphrase)
+        args.append("{}:{}{}".format(self.m.host, self.m.port, urllib.parse.quote(self.fullpath)))
+        _ = subprocess.run(args, check=True, input=data, env=os.environ)
         self.offset += len(data)
 
     def rewind(self):
@@ -69,11 +65,11 @@ class FileHandle:
         self.offset, _ = self.m.stat(self.path)
         return self.offset
 
-    def _format_bytes(self, offset):
+    def _get_bytes(self, offset):
         toread = FOUR_MEG-1 if offset + FOUR_MEG <= self.sz else self.sz % FOUR_MEG
         start = offset
         end = offset + toread
-        return '-r {}-{}'.format(start, end)
+        return '{}-{}'.format(start, end)
 
     def drain_to(self, sink):
         if(self.sz is None):
@@ -87,13 +83,12 @@ class FileHandle:
 
         while(nblocks > 0):
             print('blocks left {} sz {}'.format(nblocks, self.sz))
-            data = subprocess.check_output("""curl --compressed-ssh --insecure {} {} "{}:{}{}" """.format(
-                        self.m._format_user(),
-                        self._format_bytes(offset),
-                        self.m.host,
-                        self.m.port,
-                        urllib.parse.quote(self.fullpath)),
-                    shell=True)
+            args = ["curl", "--compressed-ssh", "--insecure", '-u', '{}:'.format(self.m.user), '--key', self.m.key, '-r', self._get_bytes(offset)]
+            if self.m.passphrase is not None:
+                args.append('--pass')
+                args.append(self.m.passphrase)
+            args.append('{}:{}{}'.format(self.m.host, self.m.port, urllib.parse.quote(self.fullpath)))
+            data = subprocess.check_output(args, env=os.environ)
             sink.write(offset, data)
             offset += FOUR_MEG
             nblocks -= 1
@@ -107,6 +102,7 @@ class Module:
         self.user =  config['user'] if 'user' in config else os.getlogin()
         self.key = config['key'] if 'key' in config else '~/.ssh/id_rsa'
         self.path =  config['path'] if 'path' in config else '/'
+        self.passphrase = config['passphrase'] if 'passphrase' in config else None
         if(self.path[-1] != '/'):
             self.path += '/'
         self.location = '{}:{}{}'.format(self.host, self.port, self.path)
@@ -116,20 +112,18 @@ class Module:
   port: {}
   path: {}
   user: {}
-  key: {}""".format(self.host, self.port, self.path, self.user, self.key))
-
-    def _format_user(self):
-        return '''-u '{}:' --key "{}" '''.format(self.user, self.key)
+  key: {}
+  passphrase: {}""".format(self.host, self.port, self.path, self.user, self.key, '********' if self.passphrase is not None else ''))
 
     def _list(self, path):
         if(path[-1] != '/'):
             raise Exception("the path arg to this method should have ended in /, but got {}".format(path))
-        raw = subprocess.check_output("""curl --compressed-ssh --insecure -l {} "{}:{}{}" """.format(
-                self._format_user(),
-                self.host,
-                self.port,
-                urllib.parse.quote(path)),
-                shell=True)
+        args = ['curl', '--compressed-ssh', '--insecure', '-l', '-u', '{}:'.format(self.user), '--key', self.key]
+        if self.passphrase is not None:
+            args.append('--pass')
+            args.append(self.passphrase)
+        args.append("{}:{}{}".format(self.host, self.port, urllib.parse.quote(path)))
+        raw = subprocess.check_output(args, env=os.environ)
         return ["{}{}".format(path, s) for s in raw.decode('utf-8').split("\n") if len(s) > 0 and s != '.' and s != '..']
 
     def _rlist(self, path, cached=None):
@@ -159,13 +153,15 @@ class Module:
                 '-i', self.key,
                 '{}@{}'.format(self.user, self.host[7:]),
                 '-p', str(self.port),
-                '''stat -c '%s' '{}{}' '''.format(self.path, path)]).decode('utf-8'))
+                '''stat -c '%s' '{}{}' '''.format(self.path, path)],
+                env=os.environ).decode('utf-8'))
         tm = datetime.fromtimestamp(int(subprocess.check_output([
                 'ssh', '-C',
                 '-i', self.key,
                 '{}@{}'.format(self.user, self.host[7:]),
                 '-p', str(self.port),
-                '''stat -c '%Y' '{}{}' '''.format(self.path, path)]).decode('utf-8')))
+                '''stat -c '%Y' '{}{}' '''.format(self.path, path)],
+                env=os.environ).decode('utf-8')))
         print('sftp: ' + repr(('{}{}'.format(self.path, path), sz, tm)))
         return sz, tm
 
@@ -180,7 +176,8 @@ class Module:
                 '-p', str(self.port),
                 '''test -e '{}' '''.format(fullpath)],
                 check=False,
-                capture_output=False)
+                capture_output=False,
+                env=os.environ)
         return cp.returncode == 0
 
     def rename(self, path):
@@ -196,7 +193,8 @@ class Module:
                 '-i', self.key,
                 '{}@{}'.format(self.user, self.host[7:]),
                 '-p', str(self.port),
-                '''mv '{}' '{}' '''.format(renfro, rento)])
+                '''mv '{}' '{}' '''.format(renfro, rento)],
+                env=os.environ)
 
     @classmethod
     def new(cls, config):

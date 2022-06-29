@@ -10,6 +10,7 @@ path = /FTPSync/vm/scratch/reference/folder1
 protocol = sftp
 user = alpine
 key = /home/alpine/.ssh/id_ed25519
+passphrase = alpine
 port = 22
 host = 127.0.0.1
 path = /home/alpine/FTPSync/vm/scratch/mirror/folder1

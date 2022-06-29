@@ -32,10 +32,11 @@ host = sftp.example.com
 port = 22
 user = me
 key = /home/me/.ssh/sftp_ed25519
+passphrase = put_this_in_if_applicable_curl_doesnt_talk_to_ssh_agent
 path = /backup
 ```
 
-SFTP only works with key pairs. `ed25519` is probably the best idea in 2022.
+SFTP only works with key pairs. `ed25519` is probably the best idea in 2022. If you have a passphrase, add it to ssh-agent (for ssh commands, without a timeout) and add the `passphrase` entry in the config (for curl commands). C.f. `/etc/ssh/ssh_config`, `AddKeysToAgent=timeout`. You should `ssh-add` it manually.
 
 SFTP is also a bit janky in that I fall back to `ssh` commands in order to stat files or rename. So right now, it doesn't work if the remote allows SFTP but dissalows a remote shell.
 

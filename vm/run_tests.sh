@@ -30,7 +30,9 @@ PASSED=0
 
 declare -a FAILED_TESTS
 
+
 THETEMPFILE=`mktemp`
+trap "rm -f '$THETEMPFILE'" EXIT
 echo THETEMPFILE is "$THETEMPFILE"
 dd if=/dev/urandom of="$THETEMPFILE" bs=4096 count=5120
 echo Done generating THETEMPFILE
@@ -72,6 +74,18 @@ run_single_test() {
     echo ''
 }
 
+setup_ssh_agent() {
+    TMPFILE=`mktemp`
+    ssh-agent > $TMPFILE
+    cat $TMPFILE
+    . $TMPFILE
+    rm $TMPFILE
+    ssh-add ~/.ssh/id_ed25519
+    trap "rm -f '$THETEMPFILE' ; kill -QUIT $SSH_AGENT_PID" EXIT
+}
+
+setup_ssh_agent
+
 if [[ $# > 0 ]] ; then
     echo running subset "$@"
     for t in "$@" ; do
@@ -93,4 +107,3 @@ if [[ $FAILED > 0 ]] ; then
         echo '    '${FAILED_TESTS[$i]}
     done
 fi
-rm -f "$THETEMPFILE"
