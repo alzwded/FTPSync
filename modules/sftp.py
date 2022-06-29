@@ -20,10 +20,19 @@ import subprocess
 import re
 import os
 import urllib.parse
+import re
 from datetime import datetime
 from lib.factory import ModuleFactory
 
 FOUR_MEG = 4 * 1024 * 1024
+
+ 
+searchpass = re.compile("""'--pass', '.*', 'sftp://""")
+
+def _anon(s):
+    global searchpass
+    return re.sub(searchpass, """'--pass', '***REDACTED***', 'sftp://""", s)
+    
 
 class FileHandle:
     def __init__(self, module, path):
@@ -135,7 +144,7 @@ class Module:
                 child = self._list(rpath)
                 rval += self._rlist(rpath, child)
             except Exception as err:
-                print(repr(err))
+                print(_anon(repr(err)))
                 rval.append(p)
         return rval
 
