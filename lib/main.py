@@ -65,7 +65,7 @@ def upload_file(i, reference, mirror):
             print(err)
             if tries_left > 0:
                 print('trying {} more times after {}s'.format(tries_left, DEFAULT_SECONDS))
-                mirh.ff()
+                mirh.rewind()
                 time.sleep(DEFAULT_SECONDS)
             else:
                 print('giving up')
@@ -214,12 +214,12 @@ def main():
         print("Expected config file")
         usage()
 
-    reference_config, mirror_config = lib.config.parse_config(config)
+    general, reference_config, mirror_config = lib.config.parse_config(config)
     reference = ModuleFactory.new(reference_config)
     mirror = ModuleFactory.new(mirror_config)
 
     if(execute is None):
-        lib.config.generate_commands(out_commands, reference, mirror, use_timestamps)
+        lib.config.generate_commands(out_commands, reference, mirror, general)
         print('Done')
         print("""Review {} then run \n    {} -c {} -x {}\nto process batch""".format(
                 out_commands,

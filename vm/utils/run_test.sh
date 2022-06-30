@@ -39,6 +39,16 @@ echo SETUP
 SETUP || exit 1
 echo OK
 
+if [[ -n ${MYCONFIG+x} ]] ; then
+    TMPF=`mktemp`
+    test -f "$MYCONFIG" || exit 2
+    cat "$MYCONFIG" > "$TMPF"
+    cat "$CONF" | grep -v '\[General\]' >> "$TMPF"
+    CONF="$TMPF"
+    trap "cat '$TMPF' ; rm -f '$TMPF'" EXIT
+fi
+
+
 echo Generating command file
 FTPSync.py -c "$CONF" || exit 1
 echo OK

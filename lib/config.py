@@ -21,6 +21,11 @@ import sys
 
 def _invalid_config():
     print("""Example config file:
+    [General]
+    CompareSize = yes
+    CompareTimestamp = no
+    ParseFTPLs = yes
+
     [Reference]
     protocol=ftp
     root=/folder1
@@ -46,13 +51,28 @@ def parse_config(configpath):
     if(not config.has_section("Reference") or not config.has_section("Mirror")):
         _invalid_config()
 
-    return (config['Reference'], config['Mirror'])
+    reference = config['Reference']
+    mirror = config['Mirror']
+
+    general = config['General'] if config.has_section('General') else {}
+    if 'CompareSize' not in general:
+        general['CompareSize'] = 'yes'
+    if 'CompareTimestamp' not in general:
+        general['CompareTimestamp'] = 'no'
+    if 'ParseFTPLs' not in general:
+        general['ParseFTPLs'] = 'yes'
+
+    for k in general:
+        reference[k] = general[k]
+        mirror[k] = general[k]
+
+    return (general, reference, mirror)
 
 SKIP = 's'
 OVERWRITE = '!'
 RENAME_KEEP = 'k'
 
-def generate_commands(configpath, reference, mirror, use_timestamps=False):
+def generate_commands(configpath, reference, mirror, general):
     ref_files = reference.tree()
     mir_files = mirror.tree()
     print(repr(ref_files))
@@ -68,29 +88,35 @@ def generate_commands(configpath, reference, mirror, use_timestamps=False):
 
     for i in interset:
         ref_sz, ref_tm, mir_sz, mir_tm = None, None, None, None
-        try:
-            ref_sz, ref_tm = reference.stat(i)
-            ref_tm = ref_tm.strftime('%x %X')
-        except Exception as err:
-            _, _, exc_traceback = sys.exc_info()
-            print(err)
-            print(FormatTB(exc_traceback))
+        if general['CompareTimestamp'] == 'yes' or general['CompareSize'] == 'yes':
+            try:
+                ref_sz, ref_tm = reference.stat(i)
+                ref_tm = ref_tm.strftime('%x %X')
+            except Exception as err:
+                _, _, exc_traceback = sys.exc_info()
+                print(err)
+                print(FormatTB(exc_traceback))
+                ref_sz = 0
+                ref_tm = 'missing'
+            try:
+                mir_sz, mir_tm = mirror.stat(i)
+                mir_tm = mir_tm.strftime('%x %X')
+            except Exception as err:
+                _, _, exc_traceback = sys.exc_info()
+                print(err)
+                print(FormatTB(exc_traceback))
+                mir_sz = 0
+                mir_tm = 'missing'
+        else:
             ref_sz = 0
             ref_tm = 'missing'
-        try:
-            mir_sz, mir_tm = mirror.stat(i)
-            mir_tm = mir_tm.strftime('%x %X')
-        except Exception as err:
-            _, _, exc_traceback = sys.exc_info()
-            print(err)
-            print(FormatTB(exc_traceback))
             mir_sz = 0
             mir_tm = 'missing'
 
         print(repr((i, ref_sz, ref_tm, mir_sz, mir_tm)))
 
-        if(ref_sz != mir_sz
-            or (use_timestamps and ref_tm != mir_tm)):
+        if((general['CompareSize'] and ref_sz != mir_sz)
+            or (general['CompareTimestamp'] == 'yes' and ref_tm != mir_tm)):
             differences[i] = {
                 'ref_sz': ref_sz,
                 'ref_tm': ref_tm,

@@ -19,6 +19,7 @@
 import subprocess
 import re
 import os
+from vendor.ftputil.stat import UnixParser
 import urllib.parse
 import re
 from datetime import datetime
@@ -115,6 +116,8 @@ class Module:
         if(self.path[-1] != '/'):
             self.path += '/'
         self.location = '{}:{}{}'.format(self.host, self.port, self.path)
+        self.stats = None
+        self.parseLs = config['ParseFTPLs'] == 'yes'
 
         print("""SFTP module initialized:
   host: {}
@@ -127,13 +130,27 @@ class Module:
     def _list(self, path):
         if(path[-1] != '/'):
             raise Exception("the path arg to this method should have ended in /, but got {}".format(path))
-        args = ['curl', '--compressed-ssh', '--insecure', '-l', '-u', '{}:'.format(self.user), '--key', self.key]
+        args = ['curl', '--compressed-ssh', '--insecure', '-u', '{}:'.format(self.user), '--key', self.key]
+        if not self.parseLs:
+            args.append('-l')
         if self.passphrase is not None:
             args.append('--pass')
             args.append(self.passphrase)
         args.append("{}:{}{}".format(self.host, self.port, urllib.parse.quote(path)))
         raw = subprocess.check_output(args, env=os.environ)
-        return ["{}{}".format(path, s) for s in raw.decode('utf-8').split("\n") if len(s) > 0 and s != '.' and s != '..']
+        if self.parseLs:
+            parser = UnixParser()
+            stats = [parser.parse_line(s) for s in raw.decode('utf-8').split("\n") if(len(s) > 0)]
+            filelist = []
+            for s in stats:
+                if s._st_name == '.' or s._st_name == '..':
+                    continue
+                ff = '{}{}'.format(path, s._st_name)
+                self.stats[ff] = s
+                filelist.append(ff)
+            return filelist
+        else:
+            return ["{}{}".format(path, s) for s in raw.decode('utf-8').split("\n") if len(s) > 0 and s != '.' and s != '..']
 
     def _rlist(self, path, cached=None):
         this_depth = self._list(path) if cached is None else cached
@@ -152,11 +169,18 @@ class Module:
         if(self.path[-1] != '/'):
             raise Exception('self.path should have ended in /!')
         skip = len(self.path)
+        if(self.parseLs):
+            self.stats = {}
         return [s[skip:] for s in self._rlist(self.path)]
 
     def stat(self, path):
         if(path[-1] == '/'):
             raise 'did not expect path to end in /'
+        if(self.stats is not None):
+            fp = '{}{}'.format(self.path, path)
+            if fp not in self.stats:
+                raise Exception('file {} does not exist'.format(fp))
+            return self.stats[fp].st_size, self.stats[fp].st_mtime
         sz = int(subprocess.check_output([
                 'ssh', '-C',
                 '-i', self.key,

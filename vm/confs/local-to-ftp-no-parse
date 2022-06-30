@@ -1,0 +1,14 @@
+[General]
+ParseFTPLs = no
+
+[Reference]
+protocol = file
+path = reference/folder1
+
+[Mirror]
+path = /FTPSync/vm/scratch/mirror/folder1
+host = 127.0.0.1
+protocol = ftp
+user = alpine
+password = alpine
+port = 21
