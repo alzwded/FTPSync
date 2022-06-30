@@ -29,7 +29,7 @@ from lib.ftb import FormatTB
 #file_mod = modules.file.instance()
 
 ARGS = 'c:hvx:w:'
-VERSION = '0.9'
+VERSION = '0.9.2'
 DEFAULT_TRIES = 3
 DEFAULT_SECONDS = 2 * 60
 
