@@ -18,6 +18,11 @@ Usage
 In order to run, you need a config file. For example, to sync FTP to SFTP:
 
 ```ini
+[General]
+CompareSize = yes     ; default; check file sizes to determine changes
+CompareTimestamp = no ; default; this script doesn't set timestamps on the remote, so it's more of a FIXME
+ParseFTPLs = yes      ; default; uses ftputil.stat.UnixParser to parse the output of ftp/sftp list to determine sz and tm
+
 [Reference]
 protocol = ftp
 host = 192.168.0.42
@@ -98,7 +103,7 @@ c/modified = s
 
 The paths are relative to the `path` config option. Since this is a sync tool, we assume the trees to mostly match.
 
-File modifications are determined purely by file size. There is a `-T` flag to check timestamps, but right now the files aren't `touch`ed to apply the reference timestamp to the mirror, so you probably don't want to use that.
+File modifications are determined purely by file size. There is a `CompareTimestamp=yes/no` option to check timestamps, but right now the files aren't `touch`ed to apply the reference timestamp to the mirror, so you probably don't want to use that.
 
 The intention is that you review it and change the `!sk` characters to suit your needs. You can also arbitrarily add entries under `[Merge]` to force overwriting files you know are different. E.g. I know I changed a byte in `c/changed`, so I'll add a line `c/changed = !` to overwrite or `c/changed = k` to keep both copies. Or you can keep a `commands.xsync` around that always uploads files with `k` if you're taking poor man's snapshots (I don't).
 
