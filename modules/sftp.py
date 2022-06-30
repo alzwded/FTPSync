@@ -130,6 +130,10 @@ class Module:
     def _list(self, path):
         if(path[-1] != '/'):
             raise Exception("the path arg to this method should have ended in /, but got {}".format(path))
+        if self.stats is not None:
+            if path[:-1] in self.stats:
+                if self.stats[path[:-1]].st_mode & 0o0040000 == 0:
+                    raise Exception("{} is a file, not a directory".format(path))
         args = ['curl', '--compressed-ssh', '--insecure', '-u', '{}:'.format(self.user), '--key', self.key]
         if self.stats is None:
             args.append('-l')
