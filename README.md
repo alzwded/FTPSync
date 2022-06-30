@@ -147,3 +147,10 @@ A 20MB temp file is created to simulate large files.
 You can run a single test in all configs using `run_tests.sh tests/onetest`.
 
 The VM is important, since [the default configs](./vm/confs) have some pretty hard coded absolute paths.
+
+3rd party
+=========
+
+This project uses `ftputil` by Stefan Schwarzer.
+
+Copyright (C) 2006-2018, Stefan Schwarzer <sschwarzer@sschwarzer.net>
