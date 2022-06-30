@@ -131,14 +131,14 @@ class Module:
         if(path[-1] != '/'):
             raise Exception("the path arg to this method should have ended in /, but got {}".format(path))
         args = ['curl', '--compressed-ssh', '--insecure', '-u', '{}:'.format(self.user), '--key', self.key]
-        if not self.parseLs:
+        if self.stats is None:
             args.append('-l')
         if self.passphrase is not None:
             args.append('--pass')
             args.append(self.passphrase)
         args.append("{}:{}{}".format(self.host, self.port, urllib.parse.quote(path)))
         raw = subprocess.check_output(args, env=os.environ)
-        if self.parseLs:
+        if self.stats is not None:
             parser = UnixParser()
             stats = [parser.parse_line(s) for s in raw.decode('utf-8').split("\n") if(len(s) > 0)]
             filelist = []
@@ -180,7 +180,7 @@ class Module:
             fp = '{}{}'.format(self.path, path)
             if fp not in self.stats:
                 raise Exception('file {} does not exist'.format(fp))
-            return self.stats[fp].st_size, self.stats[fp].st_mtime
+            return self.stats[fp].st_size, datetime.fromtimestamp(self.stats[fp].st_mtime)
         sz = int(subprocess.check_output([
                 'ssh', '-C',
                 '-i', self.key,

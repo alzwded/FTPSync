@@ -17,6 +17,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import subprocess
 import dateutil.parser
+from datetime import datetime
 import re
 import os
 import urllib.parse
@@ -134,13 +135,13 @@ class Module:
         if(path[-1] != '/'):
             raise Exception("the path arg to this method should have ended in /, but got {}".format(path))
         raw = subprocess.check_output("""curl --ftp-pasv {} {} "{}:{}{}" """.format(
-                '-l' if not self.parseLs else '',
+                '-l' if self.stats is None else '',
                 self._format_user(),
                 self.host,
                 self.port,
                 urllib.parse.quote(path)),
                 shell=True)
-        if self.parseLs:
+        if self.stats is not None:
             parser = UnixParser()
             stats = [parser.parse_line(s) for s in raw.decode('utf-8').split("\n") if(len(s) > 0)]
             filelist = []
@@ -182,7 +183,7 @@ class Module:
             fp = '{}{}'.format(self.path, path)
             if fp not in self.stats:
                 raise Exception('file {} does not exist'.format(fp))
-            return self.stats[fp].st_size, self.stats[fp].st_mtime
+            return self.stats[fp].st_size, datetime.fromtimestamp(self.stats[fp].st_mtime)
         # TODO be resilient and log errors to a log file
         lines = subprocess.check_output("""curl -I --ftp-pasv {} "{}:{}{}" """.format(
                 self._format_user(),
