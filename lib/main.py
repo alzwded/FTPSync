@@ -28,7 +28,7 @@ from lib.ftb import FormatTB
 #sftp_mod = modules.sftp.instance()
 #file_mod = modules.file.instance()
 
-ARGS = 'c:hvx:w:T'
+ARGS = 'c:hvx:w:'
 VERSION = '0.9'
 DEFAULT_TRIES = 3
 DEFAULT_SECONDS = 2 * 60
@@ -207,8 +207,6 @@ def main():
             version()
         if(opt == '-w'):
             out_commands = arg
-        if(opt == '-T'):
-            use_timestamps = True
 
     if config is None:
         print("Expected config file")
