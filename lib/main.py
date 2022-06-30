@@ -28,7 +28,7 @@ from lib.ftb import FormatTB
 #sftp_mod = modules.sftp.instance()
 #file_mod = modules.file.instance()
 
-ARGS = 'c:hvx:w:'
+ARGS = 'c:hVx:w:'
 VERSION = '0.9.2'
 DEFAULT_TRIES = 3
 DEFAULT_SECONDS = 2 * 60
@@ -203,7 +203,7 @@ def main():
             config = arg
         if(opt == '-x'):
             execute = arg
-        if(opt == '-v'):
+        if(opt == '-V'):
             version()
         if(opt == '-w'):
             out_commands = arg
