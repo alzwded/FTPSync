@@ -64,7 +64,7 @@ run_single_test() {
             RAN=`expr $RAN + 1`
             FAILED=`expr $FAILED + 1`
             echo $t $conf FAILED
-            exit 1
+            #exit 1
             ;;
         2)
             ;;
