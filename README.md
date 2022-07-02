@@ -138,11 +138,13 @@ Protocols are handled by [modules](./modules). You can add new ones there (like 
 
 For testing, I have [notes](./vm/NOTES.txt) on how to set up an Alpine Linux VM to run the tests. During development, you probably don't want to run the tests using a real FTP or SFTP server; but you can.
 
-I picked Alpine because something usually breaks because I'm so used to Ubuntu/Debian, I can't tell when something is standard or a Debianism.
+When setting up, make sure the test user is `alpine` with password `alpine` and add the `alpine` passphrase to the SSH key. Also, make sure you clone the repo in `/hom/alpine/FTPSync`. If you deviate from these defaults, you need to update all the test [configs](./vm/confs). The intention with that VM is that it's standalone and not connected to anything, so default passwords shouldn't be a problem `:-)`.
 
-The tests are run in 3 configurations, `ftp` `->` `sftp` `->` `local` `->` `ftp`. This highlighted a lot of problems.
+I picked Alpine because something usually breaks because I'm so used to Ubuntu/Debian, I can't tell when something is standard or a Debianism. And yeah, I did find issues `:-)`
 
-I think the 4 tests have good enough coverage to prove it works.
+The tests are run in 3 configurations, `ftp` `->` `sftp` `->` `local` `->` `ftp`. This highlighted a lot of problems. `pure-sftp` is also swapped in for `sftp` to test that as well. And there are 2 more variations for each combination: parse the output of FTP LS being turned off, and getting the file trees from two threads.
+
+I think the 6 or so tests have good enough coverage to prove it works.
 
 FTP is a weird beast, so it's a good idea to run the tests in `local->ftp` and `ftp->local` configurations to check it works with your ftp server software.
 
