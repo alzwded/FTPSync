@@ -16,6 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+###########
+# T O D O #
+###########
+# TODO turn this into a pure sftp module that doesn't do any ssh-ing whatsoever
+#      for deleting files, rely on curl -Q rm
+#      for renaming, rely on curl -Q rename
+#      for block upload/download, pick one
+#          - for stat, do an ls on the directory and parse output; or
+#          - try a block, if you get out of range exception, try entire file i.e. 'blockstart-'
+#      reduplicate all the tests again to try with this protocol
+
 import subprocess
 import re
 import os
@@ -238,4 +249,4 @@ class Module:
         return Module(config)
 
 
-ModuleFactory.register('sftp1', Module)
+ModuleFactory.register('pure-sftp', Module)
