@@ -1,3 +1,6 @@
+[General]
+ThreadedLS = no
+
 [Reference]
 protocol = sftp
 user = alpine

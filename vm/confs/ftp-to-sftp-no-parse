@@ -1,5 +1,6 @@
 [General]
 ParseFTPLs = no
+ThreadedLS = no
 
 [Reference]
 protocol = ftp

@@ -22,6 +22,7 @@ In order to run, you need a config file. For example, to sync FTP to SFTP:
 CompareSize = yes     ; default; check file sizes to determine changes
 CompareTimestamp = no ; default; this script doesn't set timestamps on the remote, so it's more of a FIXME
 ParseFTPLs = yes      ; default; uses ftputil.stat.UnixParser to parse the output of ftp/sftp list to determine sz and tm
+ThreadedLS = yes      ; default; gets the directory listing on both remotes using threads
 
 [Reference]
 protocol = ftp

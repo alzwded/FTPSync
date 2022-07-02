@@ -1,6 +1,5 @@
 [General]
-ParseFTPLs = no
-ThreadedLS = no
+ThreadedLS = yes
 
 [Reference]
 protocol = sftp

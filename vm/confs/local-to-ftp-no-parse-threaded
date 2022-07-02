@@ -1,5 +1,6 @@
 [General]
-ThreadedLS = no
+ParseFTPLs = no
+ThreadedLS = yes
 
 [Reference]
 protocol = file

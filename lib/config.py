@@ -64,7 +64,7 @@ def parse_config(configpath):
     if 'ParseFTPLs' not in general:
         general['ParseFTPLs'] = 'yes'
     if 'ThreadedLS' not in general:
-        general['ThreadedLS'] = 'no'
+        general['ThreadedLS'] = 'yes'
 
     for k in general:
         reference[k] = general[k]
@@ -83,6 +83,7 @@ def generate_commands(configpath, reference, mirror, general):
     ref_files = []
     mir_files = []
     if general['ThreadedLS'] == 'yes':
+        print('!!!! Running tree() on threads !!!!')
         reft = Thread(target=tree_thread, args=(reference, ref_files))
         mirt = Thread(target=tree_thread, args=(mirror, mir_files))
         reft.start()
@@ -90,6 +91,7 @@ def generate_commands(configpath, reference, mirror, general):
         reft.join()
         mirt.join()
     else:
+        print('!!!! Running tree() sequentially !!!!')
         ref_files = reference.tree()
         mir_files = mirror.tree()
     print(repr(ref_files))
