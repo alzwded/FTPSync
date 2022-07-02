@@ -142,7 +142,6 @@ class Module:
             fname = lines[3*i+0]
             sz = lines[3*i+1]
             tm = lines[3*i+2]
-            print(fname, sz, tm)
             self.stats[fname] = { 'sz': int(sz), 'tm': int(tm) }
         return [s[skip:] for s in self.stats.keys()]
 
