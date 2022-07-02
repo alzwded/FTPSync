@@ -10,6 +10,8 @@ qemu-img create -f qcow2 alpine.img 4G
 # -spice enables the virt manager remote desktop thing
 # -vnc enables vnc
 # -curses used to work, but it boots in graphical mode for some reason
+#               pass nofb nomodeset to kernel parameters to get it working
+#               ...but then the keyboard layout is broken; nomodeset + qemu's window is the best option thus far
 
 qemu-system-x86_64 -machine 'q35,accel=kvm' -accel kvm -boot order=dc -m 1G -hda alpine.img -cdrom alpine-standard-3.16.0-x86_64.iso
 qemu-system-x86_64 -machine 'q35,accel=kvm' -accel kvm -boot order=c -m 1G -hda alpine.img 
