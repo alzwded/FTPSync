@@ -30,7 +30,7 @@ from lib.ftb import FormatTB
 
 ARGS = 'c:hVx:w:'
 VERSION = '0.9.4'
-DEFAULT_TRIES = 3
+DEFAULT_TRIES = 10
 DEFAULT_SECONDS = 2 * 60
 
 def usage():
