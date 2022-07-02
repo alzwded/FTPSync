@@ -24,8 +24,6 @@ import urllib.parse
 from vendor.ftputil.stat import UnixParser
 from lib.factory import ModuleFactory
 
-FOUR_MEG = 4 * 1024 * 1024
-
 class FileHandle:
     def __init__(self, module, path):
         self.m = module
@@ -74,7 +72,7 @@ class FileHandle:
         return self.offset
 
     def _format_bytes(self, offset):
-        toread = FOUR_MEG-1 if offset + FOUR_MEG <= self.sz else self.sz % FOUR_MEG
+        toread = self.m.block_size-1 if offset + self.m.block_size <= self.sz else self.sz % self.m.block_size
         start = offset
         end = offset + toread
         return '-r {}-{}'.format(start, end)
@@ -86,8 +84,8 @@ class FileHandle:
         # don't start at 0 in case we're retrying
         offset = sink.offset
 
-        nblocks = self.sz // FOUR_MEG + (1 if ((self.sz % FOUR_MEG) != 0) else 0);
-        nblocks -= offset // FOUR_MEG
+        nblocks = self.sz // self.m.block_size + (1 if ((self.sz % self.m.block_size) != 0) else 0);
+        nblocks -= offset // self.m.block_size
 
         while(nblocks > 0):
             print('blocks left {} sz {}'.format(nblocks, self.sz))
@@ -99,7 +97,7 @@ class FileHandle:
                         urllib.parse.quote(self.fullpath)),
                     shell=True)
             sink.write(offset, data)
-            offset += FOUR_MEG
+            offset += self.m.block_size
             nblocks -= 1
 
 class Module:
@@ -115,7 +113,8 @@ class Module:
             self.path += '/'
         self.location = '{}:{}{}'.format(self.host, self.port, self.path)
         self.stats = None
-        self.parseLs = config['ParseFTPLs'] == 'yes'
+        self.parseLs = config['ParseFTPLs']
+        self.block_size = config['BlockSize']
 
         print("""FTP module initialized:
   host: {}

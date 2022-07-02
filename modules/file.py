@@ -21,7 +21,6 @@ import os.path
 from datetime import datetime
 from lib.factory import ModuleFactory
 
-FOUR_MEG = 1024 * 1024 * 4
 SEEK_SET = 0
 SEEK_POS = 1
 SEEK_END = 2
@@ -61,13 +60,13 @@ class FileHandle:
         # don't start at 0 in case we're retrying
         offset = sink.offset
 
-        nblocks = self.sz // FOUR_MEG + (1 if ((self.sz % FOUR_MEG) != 0) else 0);
-        nblocks -= offset // FOUR_MEG
+        nblocks = self.sz // self.m.block_size + (1 if ((self.sz % self.m.block_size) != 0) else 0);
+        nblocks -= offset // self.m.block_size
 
         with open(self.fullpath, 'rb') as f:
             while(nblocks > 0):
                 print('blocks left {} sz {}'.format(nblocks, self.sz))
-                toread = FOUR_MEG if offset + FOUR_MEG <= self.sz else self.sz % FOUR_MEG
+                toread = self.m.block_size if offset + self.m.block_size <= self.sz else self.sz % self.m.block_size
                 print('writing at offset {}'.format(offset))
                 f.seek(offset, SEEK_SET)
                 data = f.read(toread)
@@ -83,6 +82,7 @@ class Module:
       self.location = 'file://localhost{}'.format(self.path)
       if(self.path[-1] != '/'):
         self.path += '/'
+      self.block_size = config['BlockSize']
       print("""FILE module initialized:
   path={}""".format(self.path))
 

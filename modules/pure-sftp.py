@@ -36,9 +36,6 @@ import re
 from datetime import datetime
 from lib.factory import ModuleFactory
 
-FOUR_MEG = 4 * 1024 * 1024
-
- 
 searchpass = re.compile("""'--pass', '.*', 'sftp://""")
 
 def _anon(s):
@@ -91,7 +88,7 @@ class FileHandle:
         return self.offset
 
     def _get_bytes(self, offset):
-        toread = FOUR_MEG-1 if offset + FOUR_MEG <= self.sz else self.sz % FOUR_MEG
+        toread = self.m.block_size-1 if offset + self.m.block_size <= self.sz else self.sz % self.m.block_size
         start = offset
         end = offset + toread
         return '{}-{}'.format(start, end)
@@ -103,8 +100,8 @@ class FileHandle:
         # don't start at 0 in case we're retrying
         offset = sink.offset
 
-        nblocks = self.sz // FOUR_MEG + (1 if ((self.sz % FOUR_MEG) != 0) else 0);
-        nblocks -= offset // FOUR_MEG
+        nblocks = self.sz // self.m.block_size + (1 if ((self.sz % self.m.block_size) != 0) else 0);
+        nblocks -= offset // self.m.block_size
 
         while(nblocks > 0):
             print('blocks left {} sz {}'.format(nblocks, self.sz))
@@ -115,7 +112,7 @@ class FileHandle:
             args.append('{}:{}{}'.format(self.m.host, self.m.port, urllib.parse.quote(self.fullpath)))
             data = subprocess.check_output(args, env=os.environ)
             sink.write(offset, data)
-            offset += FOUR_MEG
+            offset += self.m.block_size
             nblocks -= 1
 
 class Module:
@@ -133,6 +130,7 @@ class Module:
         self.location = '{}:{}{}'.format(self.host, self.port, self.path)
         self.stats = None
         self.parseLs = True # TODO remove me
+        self.block_size = config['BlockSize']
 
         print("""Pure SFTP (no SSH shell) module initialized:
   host: {}

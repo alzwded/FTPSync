@@ -27,6 +27,7 @@ def _invalid_config():
     CompareTimestamp = no
     ParseFTPLs = yes
     ThreadedLS = no
+    BlockSize = 4194304
 
     [Reference]
     protocol=ftp
@@ -53,10 +54,10 @@ def parse_config(configpath):
     if(not config.has_section("Reference") or not config.has_section("Mirror")):
         _invalid_config()
 
-    reference = config['Reference']
-    mirror = config['Mirror']
+    reference = dict(config['Reference'])
+    mirror = dict(config['Mirror'])
 
-    general = config['General'] if config.has_section('General') else {}
+    general = dict(config['General']) if config.has_section('General') else {}
     if 'CompareSize' not in general:
         general['CompareSize'] = 'yes'
     if 'CompareTimestamp' not in general:
@@ -65,6 +66,11 @@ def parse_config(configpath):
         general['ParseFTPLs'] = 'yes'
     if 'ThreadedLS' not in general:
         general['ThreadedLS'] = 'yes'
+    if 'BlockSize' not in general:
+        general['BlockSize'] = 4194304
+    for k in ['CompareSize', 'CompareTimestamp', 'ParseFTPLs', 'ThreadedLS']:
+        general[k] = general[k] == 'yes'
+    general['BlockSize'] = int(general['BlockSize'])
 
     for k in general:
         reference[k] = general[k]
@@ -82,7 +88,7 @@ def tree_thread(c, files):
 def generate_commands(configpath, reference, mirror, general):
     ref_files = []
     mir_files = []
-    if general['ThreadedLS'] == 'yes':
+    if general['ThreadedLS']:
         print('!!!! Running tree() on threads !!!!')
         reft = Thread(target=tree_thread, args=(reference, ref_files))
         mirt = Thread(target=tree_thread, args=(mirror, mir_files))
@@ -107,7 +113,7 @@ def generate_commands(configpath, reference, mirror, general):
 
     for i in interset:
         ref_sz, ref_tm, mir_sz, mir_tm = None, None, None, None
-        if general['CompareTimestamp'] == 'yes' or general['CompareSize'] == 'yes':
+        if general['CompareTimestamp'] or general['CompareSize']:
             try:
                 ref_sz, ref_tm = reference.stat(i)
                 ref_tm = ref_tm.strftime('%x %X')
@@ -135,7 +141,7 @@ def generate_commands(configpath, reference, mirror, general):
         print(repr((i, ref_sz, ref_tm, mir_sz, mir_tm)))
 
         if((general['CompareSize'] and ref_sz != mir_sz)
-            or (general['CompareTimestamp'] == 'yes' and ref_tm != mir_tm)):
+            or (general['CompareTimestamp']  and ref_tm != mir_tm)):
             differences[i] = {
                 'ref_sz': ref_sz,
                 'ref_tm': ref_tm,
