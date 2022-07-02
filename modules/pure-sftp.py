@@ -63,17 +63,17 @@ class FileHandle:
             return '-C {}'.format(offset)
 
     def write(self, offset, data):
-        if(self.offset == 0):
+        if(self.offset == 0 and self.m._remoteexists(self.fullpath)):
             args = [
                 "curl", "--compressed-ssh", "--insecure", "-I",
-                "-Q", 'rm {}'.format(self.fullpath),
+                "-Q", 'rm "{}"'.format(self.fullpath),
                 "-u", "{}:".format(self.m.user),
                 "-key", self.m.key,
                 ]
             if self.m.passphrase is not None:
                 args.append('--pass')
                 args.append(self.m.passphrase)
-            args.append("{}:{}{}".format(self.m.host, self.m.port, urllib.parse.quote(self.fullpath)))
+            args.append("{}:{}{}".format(self.m.host, self.m.port, urllib.parse.quote(os.path.dirname(self.fullpath) + '/')))
             _ = subprocess.run(args, check=True)
         args = ["curl", "--compressed-ssh", "--insecure", "--ftp-create-dirs", "-T", "-", "-a", "-u", '{}:'.format(self.m.user), "--key", self.m.key]
         if self.m.passphrase is not None:
@@ -132,7 +132,7 @@ class Module:
             self.path += '/'
         self.location = '{}:{}{}'.format(self.host, self.port, self.path)
         self.stats = None
-        self.parseLs = config['ParseFTPLs'] == 'yes'
+        self.parseLs = True # TODO remove me
 
         print("""Pure SFTP (no SSH shell) module initialized:
   host: {}
@@ -195,18 +195,16 @@ class Module:
     def stat(self, path):
         if(path[-1] == '/'):
             raise 'did not expect path to end in /'
+        fp = '{}{}'.format(self.path, path)
         if(self.stats is not None):
-            fp = '{}{}'.format(self.path, path)
             if fp not in self.stats:
                 raise Exception('file {} does not exist'.format(fp))
             return self.stats[fp].st_size, datetime.fromtimestamp(self.stats[fp].st_mtime)
         args = ['curl', '--compressed-ssh', '--insecure', '-u', '{}:'.format(self.user), '--key', self.key]
-        if self.stats is None:
-            args.append('-l')
         if self.passphrase is not None:
             args.append('--pass')
             args.append(self.passphrase)
-        args.append("{}:{}{}".format(self.host, self.port, urllib.parse.quote(os.path.dirname(path))))
+        args.append("{}:{}{}".format(self.host, self.port, urllib.parse.quote(os.path.dirname(fp) + '/')))
         raw = subprocess.check_output(args, env=os.environ)
         parser = UnixParser()
         stats = [parser.parse_line(s) for s in raw.decode('utf-8').split("\n") if(len(s) > 0)]
@@ -224,7 +222,8 @@ class Module:
 
     def _remoteexists(self, fullpath):
         try:
-            self.stat(fullpath)        
+            skip = len(self.path)
+            self.stat(fullpath[skip:])
             return True
         except:
             return False
@@ -240,13 +239,13 @@ class Module:
         args = [
             "curl", "--compressed-ssh", "--insecure", "-I",
             "-Q", 'rename "{}" "{}"'.format(renfro, rento),
-            "-u", "{}:".format(self.m.user),
-            "-key", self.m.key,
+            "-u", "{}:".format(self.user),
+            "-key", self.key,
             ]
-        if self.m.passphrase is not None:
+        if self.passphrase is not None:
             args.append('--pass')
-            args.append(self.m.passphrase)
-        args.append("{}:{}{}".format(self.m.host, self.m.port, urllib.parse.quote(self.path)))
+            args.append(self.passphrase)
+        args.append("{}:{}{}".format(self.host, self.port, urllib.parse.quote(self.path)))
         _ = subprocess.run(args, check=True)
 
     @classmethod
