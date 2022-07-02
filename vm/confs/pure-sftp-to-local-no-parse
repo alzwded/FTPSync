@@ -1,0 +1,16 @@
+[General]
+ParseFTPLs = no
+ThreadedLS = no
+
+[Reference]
+protocol = pure-sftp
+user = alpine
+key = /home/alpine/.ssh/id_ed25519
+passphrase = alpine
+port = 22
+host = localhost
+path = /home/alpine/FTPSync/vm/scratch/reference/folder1
+
+[Mirror]
+protocol = file
+path = mirror/folder1

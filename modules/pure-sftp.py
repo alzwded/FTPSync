@@ -64,13 +64,17 @@ class FileHandle:
 
     def write(self, offset, data):
         if(self.offset == 0):
-            _ = subprocess.check_output([
-                'ssh', '-C',
-                '-i', self.m.key,
-                '{}@{}'.format(self.m.user, self.m.host[7:]),
-                '-p', str(self.m.port),
-                '''rm -f '{}' '''.format(self.fullpath)],
-                env=os.environ)
+            args = [
+                "curl", "--compressed-ssh", "--insecure", "-I",
+                "-Q", 'rm {}'.format(self.fullpath),
+                "-u", "{}:".format(self.m.user),
+                "-key", self.m.key,
+                ]
+            if self.m.passphrase is not None:
+                args.append('--pass')
+                args.append(self.m.passphrase)
+            args.append("{}:{}{}".format(self.m.host, self.m.port, urllib.parse.quote(self.fullpath)))
+            _ = subprocess.run(args, check=True)
         args = ["curl", "--compressed-ssh", "--insecure", "--ftp-create-dirs", "-T", "-", "-a", "-u", '{}:'.format(self.m.user), "--key", self.m.key]
         if self.m.passphrase is not None:
             args.append('--pass')
@@ -130,7 +134,7 @@ class Module:
         self.stats = None
         self.parseLs = config['ParseFTPLs'] == 'yes'
 
-        print("""SFTP module initialized:
+        print("""Pure SFTP (no SSH shell) module initialized:
   host: {}
   port: {}
   path: {}
@@ -196,37 +200,34 @@ class Module:
             if fp not in self.stats:
                 raise Exception('file {} does not exist'.format(fp))
             return self.stats[fp].st_size, datetime.fromtimestamp(self.stats[fp].st_mtime)
-        sz = int(subprocess.check_output([
-                'ssh', '-C',
-                '-i', self.key,
-                '{}@{}'.format(self.user, self.host[7:]),
-                '-p', str(self.port),
-                '''stat -c '%s' '{}{}' '''.format(self.path, path)],
-                env=os.environ).decode('utf-8'))
-        tm = datetime.fromtimestamp(int(subprocess.check_output([
-                'ssh', '-C',
-                '-i', self.key,
-                '{}@{}'.format(self.user, self.host[7:]),
-                '-p', str(self.port),
-                '''stat -c '%Y' '{}{}' '''.format(self.path, path)],
-                env=os.environ).decode('utf-8')))
-        print('sftp: ' + repr(('{}{}'.format(self.path, path), sz, tm)))
-        return sz, tm
+        args = ['curl', '--compressed-ssh', '--insecure', '-u', '{}:'.format(self.user), '--key', self.key]
+        if self.stats is None:
+            args.append('-l')
+        if self.passphrase is not None:
+            args.append('--pass')
+            args.append(self.passphrase)
+        args.append("{}:{}{}".format(self.host, self.port, urllib.parse.quote(os.path.dirname(path))))
+        raw = subprocess.check_output(args, env=os.environ)
+        parser = UnixParser()
+        stats = [parser.parse_line(s) for s in raw.decode('utf-8').split("\n") if(len(s) > 0)]
+        filelist = []
+        for s in stats:
+            if s._st_name == os.path.basename(path):
+                sz = s.st_size
+                tm = datetime.fromtimestamp(s.st_mtime)
+                print('sftp: ' + repr(('{}{}'.format(self.path, path), sz, tm)))
+                return sz, tm
+        raise Exception('file {} does not exist'.format(path))
 
     def open(self, path):
         return FileHandle(self, path)
 
     def _remoteexists(self, fullpath):
-        cp = subprocess.run([
-                'ssh', '-C',
-                '-i', self.key,
-                '{}@{}'.format(self.user, self.host[7:]),
-                '-p', str(self.port),
-                '''test -e '{}' '''.format(fullpath)],
-                check=False,
-                capture_output=False,
-                env=os.environ)
-        return cp.returncode == 0
+        try:
+            self.stat(fullpath)        
+            return True
+        except:
+            return False
 
     def rename(self, path):
         i = 1
@@ -236,13 +237,17 @@ class Module:
         rento = '{}.{}'.format(renfro, i)
 
         print('will rename {} to {}'.format(renfro, rento))
-        _ = subprocess.check_output([
-                'ssh', '-C',
-                '-i', self.key,
-                '{}@{}'.format(self.user, self.host[7:]),
-                '-p', str(self.port),
-                '''mv '{}' '{}' '''.format(renfro, rento)],
-                env=os.environ)
+        args = [
+            "curl", "--compressed-ssh", "--insecure", "-I",
+            "-Q", 'rename "{}" "{}"'.format(renfro, rento),
+            "-u", "{}:".format(self.m.user),
+            "-key", self.m.key,
+            ]
+        if self.m.passphrase is not None:
+            args.append('--pass')
+            args.append(self.m.passphrase)
+        args.append("{}:{}{}".format(self.m.host, self.m.port, urllib.parse.quote(self.path)))
+        _ = subprocess.run(args, check=True)
 
     @classmethod
     def new(cls, config):
