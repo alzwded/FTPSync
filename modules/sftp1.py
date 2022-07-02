@@ -238,4 +238,4 @@ class Module:
         return Module(config)
 
 
-ModuleFactory.register('sftp', Module)
+ModuleFactory.register('sftp1', Module)

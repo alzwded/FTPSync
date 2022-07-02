@@ -117,7 +117,6 @@ class Module:
             self.path += '/'
         self.location = '{}:{}{}'.format(self.host, self.port, self.path)
         self.stats = None
-        self.parseLs = config['ParseFTPLs'] == 'yes'
 
         print("""SFTP module initialized:
   host: {}
@@ -136,15 +135,16 @@ class Module:
             '-i', self.key,
             '{}@{}'.format(self.user, self.host[7:]),
             '-p', str(self.port),
-            '''find '{}' -type f -exec ls -l '{{}}' ';' '''.format(self.path)])
+            '''find '{}' -type f -print -exec stat -c %s '{{}}' ';' -exec stat -c %Y '{{}}' ';' '''.format(self.path)])
         lines = [l for l in raw.decode('utf-8').split("\n") if (len(l) > 0)]
-        if(self.parseLs):
-            parser = UnixParser()
-            self.stats = {}
-            for l in lines:
-                s = parserparse_line(l)
-                self.stats[l] = s
-        return [s[skip:] for s in lines]
+        self.stats = {}
+        for i in range(len(lines) // 3):
+            fname = lines[3*i+0]
+            sz = lines[3*i+1]
+            tm = lines[3*i+2]
+            print(fname, sz, tm)
+            self.stats[fname] = { 'sz': int(sz), 'tm': int(tm) }
+        return [s[skip:] for s in self.stats.keys()]
 
     def stat(self, path):
         if(path[-1] == '/'):
@@ -153,7 +153,7 @@ class Module:
             fp = '{}{}'.format(self.path, path)
             if fp not in self.stats:
                 raise Exception('file {} does not exist'.format(fp))
-            return self.stats[fp].st_size, datetime.fromtimestamp(self.stats[fp].st_mtime)
+            return self.stats[fp]['sz'], datetime.fromtimestamp(self.stats[fp]['tm'])
         sz = int(subprocess.check_output([
                 'ssh', '-C',
                 '-i', self.key,
