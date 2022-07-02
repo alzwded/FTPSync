@@ -18,6 +18,7 @@
 import configparser
 from lib.ftb import FormatTB
 import sys
+from threading import Thread
 
 def _invalid_config():
     print("""Example config file:
@@ -25,6 +26,7 @@ def _invalid_config():
     CompareSize = yes
     CompareTimestamp = no
     ParseFTPLs = yes
+    ThreadedLS = no
 
     [Reference]
     protocol=ftp
@@ -61,6 +63,8 @@ def parse_config(configpath):
         general['CompareTimestamp'] = 'no'
     if 'ParseFTPLs' not in general:
         general['ParseFTPLs'] = 'yes'
+    if 'ThreadedLS' not in general:
+        general['ThreadedLS'] = 'no'
 
     for k in general:
         reference[k] = general[k]
@@ -72,9 +76,22 @@ SKIP = 's'
 OVERWRITE = '!'
 RENAME_KEEP = 'k'
 
+def tree_thread(c, files):
+    files[:] = c.tree()
+
 def generate_commands(configpath, reference, mirror, general):
-    ref_files = reference.tree()
-    mir_files = mirror.tree()
+    ref_files = []
+    mir_files = []
+    if general['ThreadedLS'] == 'yes':
+        reft = Thread(target=tree_thread, args=(reference, ref_files))
+        mirt = Thread(target=tree_thread, args=(mirror, mir_files))
+        reft.start()
+        mirt.start()
+        reft.join()
+        mirt.join()
+    else:
+        ref_files = reference.tree()
+        mir_files = mirror.tree()
     print(repr(ref_files))
     print(repr(mir_files))
     ref_set = set(ref_files)

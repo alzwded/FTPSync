@@ -42,15 +42,6 @@ def version():
     print("""FTPSync {}""".format(VERSION))
     exit(1)
 
-def generate_commands(reference, mirror):
-    #print(repr(reference.tree()))
-    #print(repr(mirror.tree()))
-
-    for f in reference.tree():
-        print(repr({'file': f, 'stats': reference.stat(f)}))
-    for f in mirror.tree():
-        print(repr({'file': f, 'stats': mirror.stat(f)}))
-
 def upload_file(i, reference, mirror):
     print('Uploading {} from {} to {}'.format(i, reference.location, mirror.location))
     refh = reference.open(i)
