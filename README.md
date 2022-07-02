@@ -21,7 +21,7 @@ In order to run, you need a config file. For example, to sync FTP to SFTP:
 [General]
 CompareSize = yes     ; default; check file sizes to determine changes
 CompareTimestamp = no ; default; this script doesn't set timestamps on the remote, so it's more of a FIXME
-ParseFTPLs = yes      ; default; uses ftputil.stat.UnixParser to parse the output of ftp/sftp list to determine sz and tm
+ParseFTPLs = yes      ; default; uses ftputil.stat.UnixParser to parse the output of ftp/pure-sftp list to determine sz and tm
 ThreadedLS = yes      ; default; gets the directory listing on both remotes using threads
 
 [Reference]
@@ -44,23 +44,23 @@ path = /backup
 
 SFTP only works with key pairs. `ed25519` is probably the best idea in 2022. If you have a passphrase, add it to ssh-agent (for ssh commands, without a timeout) and add the `passphrase` entry in the config (for curl commands). C.f. `/etc/ssh/ssh_config`, `AddKeysToAgent=timeout`. You should `ssh-add` it manually.
 
-SFTP is also a bit janky in that I fall back to `ssh` commands in order to stat files or rename. So right now, it doesn't work if the remote allows SFTP but dissalows a remote shell.
+SFTP is also a bit janky in that I use `ssh` commands in order to stat files or rename (much faster). So right now, it doesn't work if the remote allows SFTP but dissalows a remote shell. But all is not lost, I've added the 'pure-sftp' module (protocol). Use that if you want pure sftp shennanigans. It is a bit slower, but it seems to work.
 
-To mirror a folder from ftp to your local disk:
+To mirror a folder from an sftp server (which doesn't allow getting a shell) to your local disk:
 
 ```ini
 [Reference]
-protocol = ftp
+protocol = pure-sftp
 host = 192.168.0.42
-port = 21
-user = ftp
-password = reallybadpassword
+key = /home/me/.ssh/justsftp_ed25519
 path = /backup/photos
 
 [Mirror]
 protocol = file
 path = /home/me/Pictures
 ```
+
+You can find more examples [in the tests](./vm/confs).
 
 Let's call the config file `config.conf`.
 

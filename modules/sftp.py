@@ -19,7 +19,6 @@
 import subprocess
 import re
 import os
-from vendor.ftputil.stat import UnixParser
 import urllib.parse
 import re
 from datetime import datetime
