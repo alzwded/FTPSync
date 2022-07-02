@@ -127,24 +127,55 @@ class Module:
   key: {}
   passphrase: {}""".format(self.host, self.port, self.path, self.user, self.key, '********' if self.passphrase is not None else ''))
 
+    def _list(self, path):
+        if(path[-1] != '/'):
+            raise Exception("the path arg to this method should have ended in /, but got {}".format(path))
+        if self.stats is not None:
+            if path[:-1] in self.stats:
+                if self.stats[path[:-1]].st_mode & 0o0040000 == 0:
+                    raise Exception("{} is a file, not a directory".format(path))
+        args = ['curl', '--compressed-ssh', '--insecure', '-u', '{}:'.format(self.user), '--key', self.key]
+        if self.stats is None:
+            args.append('-l')
+        if self.passphrase is not None:
+            args.append('--pass')
+            args.append(self.passphrase)
+        args.append("{}:{}{}".format(self.host, self.port, urllib.parse.quote(path)))
+        raw = subprocess.check_output(args, env=os.environ)
+        if self.stats is not None:
+            parser = UnixParser()
+            stats = [parser.parse_line(s) for s in raw.decode('utf-8').split("\n") if(len(s) > 0)]
+            filelist = []
+            for s in stats:
+                if s._st_name == '.' or s._st_name == '..':
+                    continue
+                ff = '{}{}'.format(path, s._st_name)
+                self.stats[ff] = s
+                filelist.append(ff)
+            return filelist
+        else:
+            return ["{}{}".format(path, s) for s in raw.decode('utf-8').split("\n") if len(s) > 0 and s != '.' and s != '..']
+
+    def _rlist(self, path, cached=None):
+        this_depth = self._list(path) if cached is None else cached
+        rval = []
+        for p in this_depth:
+            try:
+                rpath = '{}/'.format(p)
+                child = self._list(rpath)
+                rval += self._rlist(rpath, child)
+            except Exception as err:
+                print(_anon(repr(err)))
+                rval.append(p)
+        return rval
+
     def tree(self):
         if(self.path[-1] != '/'):
             raise Exception('self.path should have ended in /!')
         skip = len(self.path)
-        raw = subprocess.check_output([
-            'ssh', '-C',
-            '-i', self.key,
-            '{}@{}'.format(self.user, self.host[7:]),
-            '-p', str(self.port),
-            '''find '{}' -type f -exec ls -l '{{}}' ';' '''.format(self.path)])
-        lines = [l for l in raw.decode('utf-8').split("\n") if (len(l) > 0)]
         if(self.parseLs):
-            parser = UnixParser()
             self.stats = {}
-            for l in lines:
-                s = parserparse_line(l)
-                self.stats[l] = s
-        return [s[skip:] for s in lines]
+        return [s[skip:] for s in self._rlist(self.path)]
 
     def stat(self, path):
         if(path[-1] == '/'):
