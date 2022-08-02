@@ -54,7 +54,7 @@ class FileHandle:
                 '-i', self.m.key,
                 '{}@{}'.format(self.m.user, self.m.host[7:]),
                 '-p', str(self.m.port),
-                '''rm -f '{}' '''.format(self.fullpath)],
+                '''rm -f {} '''.format(   ''.join([ "\\{}".format(c) for c in self.fullpath])    )],
                 env=os.environ)
         args = ["curl", "--compressed-ssh", "--insecure", "--ftp-create-dirs", "-T", "-", "-a", "-u", '{}:'.format(self.m.user), "--key", self.m.key]
         if self.m.passphrase is not None:
@@ -150,19 +150,20 @@ class Module:
             if fp not in self.stats:
                 raise Exception('file {} does not exist'.format(fp))
             return self.stats[fp]['sz'], datetime.fromtimestamp(self.stats[fp]['tm'])
+        fullpath = "".join(["\\{}".format(c) for c in '{}{}'.format(self.path, path)])
         sz = int(subprocess.check_output([
                 'ssh', '-C',
                 '-i', self.key,
                 '{}@{}'.format(self.user, self.host[7:]),
                 '-p', str(self.port),
-                '''stat -c '%s' '{}{}' '''.format(self.path, path)],
+                '''stat -c '%s' {} '''.format(   fullpath   )],
                 env=os.environ).decode('utf-8'))
         tm = datetime.fromtimestamp(int(subprocess.check_output([
                 'ssh', '-C',
                 '-i', self.key,
                 '{}@{}'.format(self.user, self.host[7:]),
                 '-p', str(self.port),
-                '''stat -c '%Y' '{}{}' '''.format(self.path, path)],
+                '''stat -c '%Y' {} '''.format(fullpath)],
                 env=os.environ).decode('utf-8')))
         print('sftp: ' + repr(('{}{}'.format(self.path, path), sz, tm)))
         return sz, tm
@@ -176,7 +177,7 @@ class Module:
                 '-i', self.key,
                 '{}@{}'.format(self.user, self.host[7:]),
                 '-p', str(self.port),
-                '''test -e '{}' '''.format(fullpath)],
+                '''test -e {} '''.format(  "".join(["\\{}".format(c) for c in fullpath])    )],
                 check=False,
                 capture_output=False,
                 env=os.environ)
@@ -195,7 +196,7 @@ class Module:
                 '-i', self.key,
                 '{}@{}'.format(self.user, self.host[7:]),
                 '-p', str(self.port),
-                '''mv '{}' '{}' '''.format(renfro, rento)],
+                '''mv {} {} '''.format("".join(["\\{}".format(c) for c in renfro]), "".join(["\\{}".format(c) for c in rento]))],
                 env=os.environ)
 
     @classmethod
