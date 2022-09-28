@@ -83,8 +83,18 @@ class Module:
       if(self.path[-1] != '/'):
         self.path += '/'
       self.block_size = config['BlockSize']
+      printStatFn = 'default fallback gnu/linux-type'
+      if(os.uname().sysname == 'Linux'):
+        self.m_stat = self.stat_linux
+        printStatFn = 'GNU/Linux style'
+      elif(os.uname().sysname == 'OpenBSD'):
+        self.m_stat = self.stat_openbsd
+        printStatFn = 'OpenBSD style'
+      else:
+        self.m_stat = stat_linux
       print("""FILE module initialized:
-  path={}""".format(self.path))
+  path={}
+  statFn={}""".format(self.path, printStatFn))
 
     def tree(self):
         result = subprocess.run(['find', '.', '-type', 'f'], stdout=subprocess.PIPE, cwd=self.path, check=True)
@@ -92,11 +102,20 @@ class Module:
         files = [re.sub(expression, '', s) for s in result.stdout.decode('utf-8').split("\n") if len(s) > 0]
         return files
 
-    def stat(self, path):
+    def stat_openbsd(self, path):
+        sz = int(subprocess.check_output(['stat', '-f', '%z', '{}{}'.format(self.path, path)]).decode('utf-8'))
+        tm = datetime.fromtimestamp(int(subprocess.check_output(['stat', '-f', '%a', '{}{}'.format(self.path, path)]).decode('utf-8')))
+        print(repr(('{}{}'.format(self.path, path), sz, tm)))
+        return sz, tm
+
+    def stat_linux(self, path):
         sz = int(subprocess.check_output(['stat', '-c', '%s', '{}{}'.format(self.path, path)]).decode('utf-8'))
         tm = datetime.fromtimestamp(int(subprocess.check_output(['stat', '-c', '%Y', '{}{}'.format(self.path, path)]).decode('utf-8')))
         print(repr(('{}{}'.format(self.path, path), sz, tm)))
         return sz, tm
+
+    def stat(self, path):
+        return self.m_stat(path)
 
     def open(self, path):
         return FileHandle(self, path)
