@@ -37,7 +37,7 @@ class FileHandle:
         self.offset = 0
 
     def ff(self):
-        self.offset, _ = self.m.stat(self.path)
+        self.offset, _, _ = self.m.stat(self.path)
         return self.offset
 
     def write(self, offset, data):
@@ -55,7 +55,7 @@ class FileHandle:
 
     def drain_to(self, sink):
         if(self.sz is None):
-            self.sz, _ = self.m.stat(self.path)
+            self.sz, _, _ = self.m.stat(self.path)
 
         # don't start at 0 in case we're retrying
         offset = sink.offset
@@ -96,7 +96,7 @@ class Module:
         sz = int(subprocess.check_output(['stat', '-c', '%s', '{}{}'.format(self.path, path)]).decode('utf-8'))
         tm = datetime.fromtimestamp(int(subprocess.check_output(['stat', '-c', '%Y', '{}{}'.format(self.path, path)]).decode('utf-8')))
         print(repr(('{}{}'.format(self.path, path), sz, tm)))
-        return sz, tm
+        return sz, tm, ''
 
     def open(self, path):
         return FileHandle(self, path)

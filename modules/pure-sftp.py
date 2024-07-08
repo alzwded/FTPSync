@@ -84,7 +84,7 @@ class FileHandle:
         self.offset = 0
 
     def ff(self):
-        self.offset, _ = self.m.stat(self.path)
+        self.offset, _, _ = self.m.stat(self.path)
         return self.offset
 
     def _get_bytes(self, offset):
@@ -95,7 +95,7 @@ class FileHandle:
 
     def drain_to(self, sink):
         if(self.sz is None):
-            self.sz, _ = self.m.stat(self.path)
+            self.sz, _, _ = self.m.stat(self.path)
 
         # don't start at 0 in case we're retrying
         offset = sink.offset
@@ -197,7 +197,7 @@ class Module:
         if(self.stats is not None):
             if fp not in self.stats:
                 raise Exception('file {} does not exist'.format(fp))
-            return self.stats[fp].st_size, datetime.fromtimestamp(self.stats[fp].st_mtime)
+            return self.stats[fp].st_size, datetime.fromtimestamp(self.stats[fp].st_mtime), ''
         args = ['curl', '--compressed-ssh', '--insecure', '-u', '{}:'.format(self.user), '--key', self.key]
         if self.passphrase is not None:
             args.append('--pass')
@@ -212,7 +212,7 @@ class Module:
                 sz = s.st_size
                 tm = datetime.fromtimestamp(s.st_mtime)
                 print('sftp: ' + repr(('{}{}'.format(self.path, path), sz, tm)))
-                return sz, tm
+                return sz, tm, ''
         raise Exception('file {} does not exist'.format(path))
 
     def open(self, path):

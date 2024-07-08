@@ -24,13 +24,6 @@ import re
 from datetime import datetime
 from lib.factory import ModuleFactory
 
-searchpass = re.compile("""'--pass', '.*', 'sftp://""")
-
-def _anon(s):
-    global searchpass
-    return re.sub(searchpass, """'--pass', '***REDACTED***', 'sftp://""", s)
-    
-
 class FileHandle:
     def __init__(self, module, path):
         self.m = module
@@ -41,28 +34,15 @@ class FileHandle:
         self.sz = None
         self.offset = 0
 
-    def _format_C(cls, offset):
-        if(offset == 0):
-            return ''
-        else:
-            return '-C {}'.format(offset)
-
     def write(self, offset, data):
-        if(self.offset == 0):
-            _ = subprocess.check_output([
-                'ssh', '-C',
-                '-i', self.m.key,
-                '{}@{}'.format(self.m.user, self.m.host[7:]),
-                '-p', str(self.m.port),
-                '''rm -f '{}' '''.format(self.fullpath)],
-                env=os.environ)
-        args = ["curl", "--compressed-ssh", "--insecure", "--ftp-create-dirs", "-T", "-", "-a", "-u", '{}:'.format(self.m.user), "--key", self.m.key]
-        if self.m.passphrase is not None:
-            args.append('--pass')
-            args.append(self.m.passphrase)
-        args.append("{}:{}{}".format(self.m.host, self.m.port, urllib.parse.quote(self.fullpath)))
+        args = ['ssh', '-C', 
+            '-i', self.m.key,
+            '-p', str(self.m.port),
+            '{}@{}'.format(self.m.user, self.m.host),
+            """bashftp put {} {} '{}'""".format(offset, offset + self.m.block_size, self.fullpath)]
+            #'bashftp', 'put', self.offset, len(data), "\"'{}'\"".format(self.fullpath)]
         _ = subprocess.run(args, check=True, input=data, env=os.environ)
-        self.offset += len(data)
+        self.offset += self.m.block_size
 
     def rewind(self):
         self.offset = 0
@@ -89,11 +69,12 @@ class FileHandle:
 
         while(nblocks > 0):
             print('blocks left {} sz {}'.format(nblocks, self.sz))
-            args = ["curl", "--compressed-ssh", "--insecure", '-u', '{}:'.format(self.m.user), '--key', self.m.key, '-r', self._get_bytes(offset)]
-            if self.m.passphrase is not None:
-                args.append('--pass')
-                args.append(self.m.passphrase)
-            args.append('{}:{}{}'.format(self.m.host, self.m.port, urllib.parse.quote(self.fullpath)))
+            args = ['ssh', '-C', 
+                '-i', self.m.key,
+                '-p', str(self.m.port),
+                '{}@{}'.format(self.m.user, self.m.host),
+                """bashftp get {} {} '{}'""".format(offset, offset + self.m.block_size, self.fullpath)]
+                #'bashftp', 'get', self.offset, len(data), "\"'{}'\"".format(self.fullpath)]
             data = subprocess.check_output(args, env=os.environ)
             sink.write(offset, data)
             offset += self.m.block_size
@@ -101,7 +82,7 @@ class FileHandle:
 
 class Module:
     def __init__(self, config):
-        self.host = 'sftp://{}'.format(config['host'])
+        self.host = config['host']
         if(self.host[-1:] == '/'):
             self.host = self.host[0:-1]
         self.port =  config['port'] if 'port' in config else 22
@@ -109,78 +90,89 @@ class Module:
         self.key = config['key'] if 'key' in config else '~/.ssh/id_rsa'
         self.path =  config['path'] if 'path' in config else '/'
         self.passphrase = config['passphrase'] if 'passphrase' in config else None
+        self.location = '{}:{}{}'.format(self.host, self.port, self.path)
         if(self.path[-1] != '/'):
             self.path += '/'
-        self.location = '{}:{}{}'.format(self.host, self.port, self.path)
         self.stats = None
         self.block_size = config['BlockSize']
+        self.use_hash = config['UseHash'] if 'UseHash' in config else ''
 
-        print("""SFTP module initialized:
+        print("""bashftp module initialized:
   host: {}
   port: {}
   path: {}
   user: {}
   key: {}
-  passphrase: {}""".format(self.host, self.port, self.path, self.user, self.key, '********' if self.passphrase is not None else ''))
+  UseHash: {}""".format(self.host, self.port, self.path, self.user, self.key, self.use_hash))
+
+    def _rlist(self, path):
+        rval = []
+        args = [
+            'ssh', '-C',
+            '-i', self.key,
+            '-p', str(self.port),
+            '{}@{}'.format(self.user, self.host),
+            """bashftp ls '{}' {}""".format(path, self.use_hash)
+        ]
+        raw = subprocess.check_output(args, env=os.environ)
+        lines = [l for l in raw.decode('utf-8').split("\n") if (len(l) > 0)]
+
+        refile = re.compile("f (\d+) (\d+) ([^ ]+) (.*)")
+        redir = re.compile("d (\d+) (.*)")
+        for l in lines:
+            mm = refile.match(l)
+            if(mm):
+                self.stats[mm[4]] = {
+                    'sz': int(mm[2]),
+                    'tm': int(mm[1]),
+                    'hash': mm[3]
+                }
+                rval += [mm[4]]
+            else:
+                mm = redir.match(l)
+                if(mm):
+                    more = self._rlist(mm[2])    
+                    rval += more
+        return rval
 
     def tree(self):
+        self.stats = {}
         if(self.path[-1] != '/'):
             raise Exception('self.path should have ended in /!')
         skip = len(self.path)
-        raw = subprocess.check_output([
-            'ssh', '-C',
-            '-i', self.key,
-            '{}@{}'.format(self.user, self.host[7:]),
-            '-p', str(self.port),
-            '''find '{}' -type f -print -exec stat -c %s '{{}}' ';' -exec stat -c %Y '{{}}' ';' '''.format(self.path)])
-        lines = [l for l in raw.decode('utf-8').split("\n") if (len(l) > 0)]
-        self.stats = {}
-        for i in range(len(lines) // 3):
-            fname = lines[3*i+0]
-            sz = lines[3*i+1]
-            tm = lines[3*i+2]
-            self.stats[fname] = { 'sz': int(sz), 'tm': int(tm) }
-        return [s[skip:] for s in self.stats.keys()]
+        return [s[skip:] for s in self._rlist(self.path)]
 
     def stat(self, path):
         if(path[-1] == '/'):
             raise 'did not expect path to end in /'
+        fp = '{}{}'.format(self.path, path)
         if(self.stats is not None):
-            fp = '{}{}'.format(self.path, path)
             if fp not in self.stats:
                 raise Exception('file {} does not exist'.format(fp))
-            return self.stats[fp]['sz'], datetime.fromtimestamp(self.stats[fp]['tm']), ''
-        sz = int(subprocess.check_output([
-                'ssh', '-C',
-                '-i', self.key,
-                '{}@{}'.format(self.user, self.host[7:]),
-                '-p', str(self.port),
-                '''stat -c '%s' '{}{}' '''.format(self.path, path)],
-                env=os.environ).decode('utf-8'))
-        tm = datetime.fromtimestamp(int(subprocess.check_output([
-                'ssh', '-C',
-                '-i', self.key,
-                '{}@{}'.format(self.user, self.host[7:]),
-                '-p', str(self.port),
-                '''stat -c '%Y' '{}{}' '''.format(self.path, path)],
-                env=os.environ).decode('utf-8')))
-        print('sftp: ' + repr(('{}{}'.format(self.path, path), sz, tm)))
-        return sz, tm, ''
+            return self.stats[fp]['sz'], datetime.fromtimestamp(self.stats[fp]['tm']), self.stats[fp]['hash']
+
+        raw = subprocess.check_output(['ssh', '-C',
+            '-i', self.key,
+            '-p', str(self.port),
+            '{}@{}'.format(self.user, self.host),
+            """bashftp ls '{}' {}""".format(os.path.dirname(fp), self.use_hash)],
+            env=os.environ)
+        lines = [l for l in raw.decode('utf-8').split("\n") if (len(l) > 0)]
+
+        rr = re.compile("f (\d+) (\d+) ([^ ]+) (.*)")
+        for l in lines:
+            mm = rr.match(l)
+            if(mm is not None):
+                if(mm[4] == fp):
+                    return int(mm[2]), datetime.fromtimestamp(int(mm[1])), mm[3]
+        
+        raise Exception('file {} does not exist'.format(fp))
 
     def open(self, path):
         return FileHandle(self, path)
 
     def _remoteexists(self, fullpath):
-        cp = subprocess.run([
-                'ssh', '-C',
-                '-i', self.key,
-                '{}@{}'.format(self.user, self.host[7:]),
-                '-p', str(self.port),
-                '''test -e '{}' '''.format(fullpath)],
-                check=False,
-                capture_output=False,
-                env=os.environ)
-        return cp.returncode == 0
+        return os.path.exists(fullpath)
 
     def rename(self, path):
         i = 1
@@ -189,11 +181,12 @@ class Module:
             i += 1
         rento = '{}.{}'.format(renfro, i)
 
+        # FIXME Either add mv to bashftp or change the semantics here...
         print('will rename {} to {}'.format(renfro, rento))
         _ = subprocess.check_output([
                 'ssh', '-C',
                 '-i', self.key,
-                '{}@{}'.format(self.user, self.host[7:]),
+                '{}@{}'.format(self.user, self.host),
                 '-p', str(self.port),
                 '''mv '{}' '{}' '''.format(renfro, rento)],
                 env=os.environ)
@@ -203,4 +196,4 @@ class Module:
         return Module(config)
 
 
-ModuleFactory.register('sftp', Module)
+ModuleFactory.register('bashftp', Module)

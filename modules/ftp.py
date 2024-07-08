@@ -68,7 +68,7 @@ class FileHandle:
         self.offset = 0
 
     def ff(self):
-        self.offset, _ = self.m.stat(self.path)
+        self.offset, _, _ = self.m.stat(self.path)
         return self.offset
 
     def _format_bytes(self, offset):
@@ -79,7 +79,7 @@ class FileHandle:
 
     def drain_to(self, sink):
         if(self.sz is None):
-            self.sz, _ = self.m.stat(self.path)
+            self.sz, _, _ = self.m.stat(self.path)
 
         # don't start at 0 in case we're retrying
         offset = sink.offset
@@ -186,7 +186,7 @@ class Module:
             fp = '{}{}'.format(self.path, path)
             if fp not in self.stats:
                 raise Exception('file {} does not exist'.format(fp))
-            return self.stats[fp].st_size, datetime.fromtimestamp(self.stats[fp].st_mtime)
+            return self.stats[fp].st_size, datetime.fromtimestamp(self.stats[fp].st_mtime), ''
         # TODO be resilient and log errors to a log file
         lines = subprocess.check_output("""curl -I --ftp-pasv {} "{}:{}{}" """.format(
                 self._format_user(),
@@ -214,7 +214,7 @@ class Module:
                 continue
 
         print('ftp: ' + repr(('{}{}'.format(self.path, path), sz, tm)))
-        return sz, tm
+        return sz, tm, ''
 
     def open(self, path):
         return FileHandle(self, path)

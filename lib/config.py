@@ -28,6 +28,7 @@ def _invalid_config():
     ParseFTPLs = yes
     ThreadedLS = no
     BlockSize = 4194304
+    ;UseHash = md5
 
     [Reference]
     protocol=ftp
@@ -112,10 +113,10 @@ def generate_commands(configpath, reference, mirror, general):
     differences = {}
 
     for i in interset:
-        ref_sz, ref_tm, mir_sz, mir_tm = None, None, None, None
-        if general['CompareTimestamp'] or general['CompareSize']:
+        ref_sz, ref_tm, ref_hash, mir_sz, mir_tm, mir_hash = None, None, None, None, None, None
+        if general['CompareTimestamp'] or general['CompareSize'] or 'UseHash' in general:
             try:
-                ref_sz, ref_tm = reference.stat(i)
+                ref_sz, ref_tm, ref_hash = reference.stat(i)
                 ref_tm = ref_tm.strftime('%x %X')
             except Exception as err:
                 _, _, exc_traceback = sys.exc_info()
@@ -124,7 +125,7 @@ def generate_commands(configpath, reference, mirror, general):
                 ref_sz = 0
                 ref_tm = 'missing'
             try:
-                mir_sz, mir_tm = mirror.stat(i)
+                mir_sz, mir_tm, mir_hash = mirror.stat(i)
                 mir_tm = mir_tm.strftime('%x %X')
             except Exception as err:
                 _, _, exc_traceback = sys.exc_info()
@@ -137,16 +138,21 @@ def generate_commands(configpath, reference, mirror, general):
             ref_tm = 'missing'
             mir_sz = 0
             mir_tm = 'missing'
+            ref_hash = 'missing'
+            mir_hash = 'missing'
 
-        print(repr((i, ref_sz, ref_tm, mir_sz, mir_tm)))
+        print(repr((i, ref_sz, ref_tm, ref_hash, mir_sz, mir_tm, mir_hash)))
 
         if((general['CompareSize'] and ref_sz != mir_sz)
-            or (general['CompareTimestamp']  and ref_tm != mir_tm)):
+            or (general['CompareTimestamp'] and ref_tm != mir_tm)
+            or ('UseHash' in general and ref_hash != mir_hash)):
             differences[i] = {
                 'ref_sz': ref_sz,
                 'ref_tm': ref_tm,
+                'ref_hash': ref_hash,
                 'mir_sz': mir_sz,
                 'mir_tm': mir_tm,
+                'mir_hash': mir_hash,
                 'action': SKIP
             }
 
@@ -184,7 +190,7 @@ def generate_commands(configpath, reference, mirror, general):
         f.write("[Merge]\n")
         for k in differences:
             v = differences[k]
-            f.write("; ref = {} {} ;; mir = {} {}\n".format(v['ref_sz'], v['ref_tm'], v['mir_sz'], v['mir_tm']))
+            f.write("; ref = {} {} {} ;; mir = {} {} {}\n".format(v['ref_sz'], v['ref_tm'], v['ref_hash'], v['mir_sz'], v['mir_tm'], v['mir_hash']))
             f.write("{} = {}\n".format(k, SKIP))
 
 def parse_commands(commandspath):

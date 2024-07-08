@@ -43,6 +43,10 @@ run_single_test() {
     echo $t
     echo '===================================================='
     for conf in confs/* ; do
+        if [[ -f ${t%.sh}.${conf##*/}.skip ]] ; then
+            echo Skipping $t for $conf
+            continue
+        fi
         echo $conf
         echo '----------------------------------------------------'
         rm -rf scratch/
