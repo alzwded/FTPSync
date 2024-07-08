@@ -23,13 +23,14 @@ import time
 from lib.factory import ModuleFactory
 import lib.config
 from lib.ftb import FormatTB
+import traceback
 
 #ftp_mod = modules.ftp.instance()
 #sftp_mod = modules.sftp.instance()
 #file_mod = modules.file.instance()
 
 ARGS = 'c:hVx:w:'
-VERSION = '0.9.7'
+VERSION = '0.9.8'
 DEFAULT_TRIES = 10
 DEFAULT_SECONDS = 2 * 60
 
@@ -54,6 +55,7 @@ def upload_file(i, reference, mirror):
             break
         except Exception as err:
             print(err)
+            traceback.print_exc()
             if tries_left > 0:
                 print('trying {} more times after {}s'.format(tries_left, DEFAULT_SECONDS))
                 mirh.rewind()
@@ -204,6 +206,14 @@ def main():
         usage()
 
     general, reference_config, mirror_config = lib.config.parse_config(config)
+    # disable UseHash if execute is on to avoid pointlessly computing hashes
+    # TODO might as well disable other stuff like timestamps, only size is needed
+    if(execute is not None and 'UseHash' in general):
+        del general['UseHash']
+        del reference_config['UseHash']
+        del mirror_config['UseHash']
+
+    # instantiate modules
     reference = ModuleFactory.new(reference_config)
     mirror = ModuleFactory.new(mirror_config)
 

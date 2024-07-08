@@ -38,7 +38,7 @@ class FileHandle:
         self.offset = 0
 
     def ff(self):
-        self.offset, _ = self.m.stat(self.path)
+        self.offset, _, _ = self.m.stat(self.path)
         return self.offset
 
     def write(self, offset, data):
@@ -56,7 +56,7 @@ class FileHandle:
 
     def drain_to(self, sink):
         if(self.sz is None):
-            self.sz, _ = self.m.stat(self.path)
+            self.sz, _, _ = self.m.stat(self.path)
 
         # don't start at 0 in case we're retrying
         offset = sink.offset
@@ -95,7 +95,7 @@ class Module:
 
     def stat(self, path):
         st = os.stat('{}{}'.format(self.path, path))
-        return int(st.st_size), datetime.fromtimestamp(int(st.st_mtime))
+        return int(st.st_size), datetime.fromtimestamp(int(st.st_mtime)), ''
 
     def open(self, path):
         return FileHandle(self, path)

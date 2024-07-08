@@ -23,6 +23,7 @@ CompareSize = yes     ; default; check file sizes to determine changes
 CompareTimestamp = no ; default; this script doesn't set timestamps on the remote, so it's more of a FIXME
 ParseFTPLs = yes      ; default; uses ftputil.stat.UnixParser to parse the output of ftp/pure-sftp list to determine sz and tm
 ThreadedLS = yes      ; default; gets the directory listing on both remotes using threads
+;UseHash = md5        ; defaut off; if set, and supported by the module, it will compute a checksum using the specified algorithm, e.g. md5
 
 [Reference]
 protocol = ftp
@@ -45,6 +46,8 @@ path = /backup
 SFTP only works with key pairs. `ed25519` is probably the best idea in 2022. If you have a passphrase, add it to ssh-agent (for ssh commands, without a timeout) and add the `passphrase` entry in the config (for curl commands). C.f. `/etc/ssh/ssh_config`, `AddKeysToAgent=timeout`. You should `ssh-add` it manually.
 
 SFTP is also a bit janky in that I use `ssh` commands in order to stat files or rename (much faster). So right now, it doesn't work if the remote allows SFTP but dissalows a remote shell. But all is not lost, I've added the 'pure-sftp' module (protocol). Use that if you want pure sftp shennanigans. It is a bit slower, but it seems to work.
+
+The [`bashftp`](https://github.com/alzwded/bashftp) module requires installation on the ~~victim~~ target machine. This is a usable on OpenBSD or Alpine which don't have sftp enabled in curl. I *could* rewrite the sftp modules to use sftp instead of curl, but that's a problem for future me. Otherwise, this requires SSH to work between the machines, keys and all.
 
 To mirror a folder from an sftp server (which doesn't allow getting a shell) to your local disk:
 
