@@ -39,7 +39,7 @@ class FileHandle:
             '-i', self.m.key,
             '-p', str(self.m.port),
             '{}@{}'.format(self.m.user, self.m.host),
-            """bashftp put {} {} '{}'""".format(offset, offset + self.m.block_size, self.fullpath)]
+            """bashftp put {} {} '{}'""".format(offset, offset + self.m.block_size, self.fullpath.replace("'", """'"'"'"""))]
             #'bashftp', 'put', self.offset, len(data), "\"'{}'\"".format(self.fullpath)]
         _ = subprocess.run(args, check=True, input=data, env=os.environ)
         self.offset += self.m.block_size
@@ -73,7 +73,7 @@ class FileHandle:
                 '-i', self.m.key,
                 '-p', str(self.m.port),
                 '{}@{}'.format(self.m.user, self.m.host),
-                """bashftp get {} {} '{}'""".format(offset, offset + self.m.block_size, self.fullpath)]
+                """bashftp get {} {} '{}'""".format(offset, offset + self.m.block_size, self.fullpath.replace("'", """'"'"'"""))]
                 #'bashftp', 'get', self.offset, len(data), "\"'{}'\"".format(self.fullpath)]
             data = subprocess.check_output(args, env=os.environ)
             sink.write(offset, data)
@@ -112,7 +112,7 @@ class Module:
             '-i', self.key,
             '-p', str(self.port),
             '{}@{}'.format(self.user, self.host),
-            """bashftp ls '{}' {}""".format(path, self.use_hash)
+            """bashftp ls '{}' {}""".format(path.replace("'", """'"'"'"""), self.use_hash)
         ]
         # check=False because stuff like lost+found messes with us
         raw = subprocess.run(args,
@@ -159,7 +159,7 @@ class Module:
             '-i', self.key,
             '-p', str(self.port),
             '{}@{}'.format(self.user, self.host),
-            """bashftp ls '{}' {}""".format(os.path.dirname(fp), self.use_hash)],
+            """bashftp ls '{}' {}""".format(os.path.dirname(fp).replace("'", """'"'"'"""), self.use_hash)],
             env=os.environ)
         lines = [l for l in raw.decode('utf-8').split("\n") if (len(l) > 0)]
 
