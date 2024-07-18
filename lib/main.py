@@ -66,7 +66,7 @@ def upload_file(i, reference, mirror):
 
 def execute_commands(commands, reference, mirror):
     log = []
-    if(commands.has_section("Upload")):
+    if "Upload" in commands:
         print('Processing [Upload]')
         s = commands['Upload']
         for i in s:
@@ -77,7 +77,7 @@ def execute_commands(commands, reference, mirror):
                 except Exception as err:
                     _, _, exc_traceback = sys.exc_info()
                     log.append('ERROR: failed to UPLOAD {} last reason {} traceback {}'.format(i, err, FormatTB(exc_traceback)))
-    if(commands.has_section("Merge")):
+    if "Merge" in commands:
         print('Processing [Merge]')
         s = commands['Merge']
         for i in s:

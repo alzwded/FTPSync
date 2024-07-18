@@ -19,6 +19,7 @@ import configparser
 from lib.ftb import FormatTB
 import sys
 from threading import Thread
+import re
 
 def _invalid_config():
     print("""Example config file:
@@ -194,8 +195,30 @@ def generate_commands(configpath, reference, mirror, general):
             f.write("{} = {}\n".format(k, SKIP))
 
 def parse_commands(commandspath):
-    config = configparser.ConfigParser()
-    config.optionxform = str
-    config.read(commandspath)
-    return config
+    config = {}
+    rsection = re.compile("^\[[a-zA-Z_0-9]+\]$")
+    raeqb = re.compile("^(.*)[ \t]*=[ \t*]([^=]*)$")
+    with open(commandspath, "r") as f:
+        lines = [l.strip() for l in f.readlines()]
+        section = "__NONE__"
+        for i in range(len(lines)):
+            l = lines[i]
+            print(l, file=sys.stderr)
+            if len(l) == 0 or l[0] == ';':
+                print(" comment", file=sys.stderr)
+                continue
+            if rsection.fullmatch(l):
+                print(" newsection", file=sys.stderr)
+                section = l[1:-1]
+                print(" ", section, file=sys.stderr)
+                if not section in config:
+                    config[section] = {}
+                continue
+            m = raeqb.fullmatch(l)
+            if not m:
+                print(" unknown", file=sys.stderr)
+                continue
+            print(" ", section, m[1].strip(), m[2].strip(), file=sys.stderr)
+            config[section][m[1].strip()] = m[2].strip()
+        return config
         
