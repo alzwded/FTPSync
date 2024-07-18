@@ -30,7 +30,7 @@ import traceback
 #file_mod = modules.file.instance()
 
 ARGS = 'c:hVx:w:'
-VERSION = '0.9.9'
+VERSION = '0.9.10'
 DEFAULT_TRIES = 10
 DEFAULT_SECONDS = 2 * 60
 
