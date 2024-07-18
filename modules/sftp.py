@@ -127,12 +127,16 @@ class Module:
         if(self.path[-1] != '/'):
             raise Exception('self.path should have ended in /!')
         skip = len(self.path)
-        raw = subprocess.check_output([
+        # check=False because lost+found will cause -exec to fail,
+        # so just grab what we can
+        raw = subprocess.run([
             'ssh', '-C',
             '-i', self.key,
             '{}@{}'.format(self.user, self.host[7:]),
             '-p', str(self.port),
-            '''find '{}' -type f -print -exec stat -c %s '{{}}' ';' -exec stat -c %Y '{{}}' ';' '''.format(self.path)])
+            '''find '{}' -type f -print -exec stat -c %s '{{}}' ';' -exec stat -c %Y '{{}}' ';' '''.format(self.path)],
+            check=False,
+            stdout=subprocess.PIPE).stdout
         lines = [l for l in raw.decode('utf-8').split("\n") if (len(l) > 0)]
         self.stats = {}
         for i in range(len(lines) // 3):

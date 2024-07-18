@@ -11,3 +11,5 @@ log
 *.log
 *.sw*
 *~
+merge.*
+error.*

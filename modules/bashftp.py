@@ -114,7 +114,11 @@ class Module:
             '{}@{}'.format(self.user, self.host),
             """bashftp ls '{}' {}""".format(path, self.use_hash)
         ]
-        raw = subprocess.check_output(args, env=os.environ)
+        # check=False because stuff like lost+found messes with us
+        raw = subprocess.run(args,
+                env=os.environ,
+                check=False,
+                stdout=subprocess.PIPE).stdout
         lines = [l for l in raw.decode('utf-8').split("\n") if (len(l) > 0)]
 
         refile = re.compile("f (\d+) (\d+) ([^ ]+) (.*)")
