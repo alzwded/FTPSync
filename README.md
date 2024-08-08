@@ -47,7 +47,7 @@ SFTP only works with key pairs. `ed25519` is probably the best idea in 2022. If 
 
 SFTP is also a bit janky in that I use `ssh` commands in order to stat files or rename (much faster). So right now, it doesn't work if the remote allows SFTP but dissalows a remote shell. But all is not lost, I've added the 'pure-sftp' module (protocol). Use that if you want pure sftp shennanigans. It is a bit slower, but it seems to work.
 
-The [`bashftp`](https://github.com/alzwded/bashftp) module requires installation on the ~~victim~~ target machine. This is a usable on OpenBSD or Alpine which don't have sftp enabled in curl. I *could* rewrite the sftp modules to use sftp instead of curl, but that's a problem for future me. Otherwise, this requires SSH to work between the machines, keys and all.
+The [`bashftp`](https://github.com/alzwded/bashftp) module requires installation on the ~~victim~~ target machine. This is usable on OpenBSD or Alpine which don't have sftp enabled in curl. I *could* rewrite the sftp modules to use sftp instead of curl, but that's a problem for future me. Otherwise, this requires SSH to work between the machines, keys and all.
 
 To mirror a folder from an sftp server (which doesn't allow getting a shell) to your local disk:
 
@@ -145,7 +145,7 @@ When setting up, make sure the test user is `alpine` with password `alpine` and 
 
 I picked Alpine because something usually breaks because I'm so used to Ubuntu/Debian, I can't tell when something is standard or a Debianism. And yeah, I did find issues `:-)`
 
-The tests are run in 3 configurations, `ftp` `->` `sftp` `->` `local` `->` `ftp`. This highlighted a lot of problems. `pure-sftp` is also swapped in for `sftp` to test that as well. And there are 2 more variations for each combination: parse the output of FTP LS being turned off, and getting the file trees from two threads.
+The tests are run in ~~3~~ many configurations, e.g. `ftp` `->` `sftp` `->` `local` `->` `ftp`. This highlighted a lot of problems. `pure-sftp` is also swapped in for `sftp` to test that as well. And there are 2 more variations for each combination: parse the output of FTP LS being turned off, and getting the file trees from two threads.
 
 I think the 6 or so tests have good enough coverage to prove it works.
 

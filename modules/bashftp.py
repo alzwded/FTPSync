@@ -105,14 +105,14 @@ class Module:
   key: {}
   UseHash: {}""".format(self.host, self.port, self.path, self.user, self.key, self.use_hash))
 
-    def _rlist(self, path):
+    def _treelist(self, path):
         rval = []
         args = [
             'ssh', '-C',
             '-i', self.key,
             '-p', str(self.port),
             '{}@{}'.format(self.user, self.host),
-            """bashftp ls '{}' {}""".format(path.replace("'", """'"'"'"""), self.use_hash)
+            """bashftp tree '{}' {}""".format(path.replace("'", """'"'"'"""), self.use_hash)
         ]
         # check=False because stuff like lost+found messes with us
         raw = subprocess.run(args,
@@ -134,9 +134,6 @@ class Module:
                 rval += [mm[4]]
             else:
                 mm = redir.match(l)
-                if(mm):
-                    more = self._rlist(mm[2])    
-                    rval += more
         return rval
 
     def tree(self):
@@ -144,7 +141,7 @@ class Module:
         if(self.path[-1] != '/'):
             raise Exception('self.path should have ended in /!')
         skip = len(self.path)
-        return [s[skip:] for s in self._rlist(self.path)]
+        return [s[skip:] for s in self._treelist(self.path)]
 
     def stat(self, path):
         if(path[-1] == '/'):
