@@ -89,7 +89,7 @@ class Module:
 
     def tree(self):
         result = subprocess.run(['find', '.', '-type', 'f'], stdout=subprocess.PIPE, cwd=self.path, check=False)
-        expression = re.compile('^\.\/')
+        expression = re.compile(r'^\.\/')
         files = [re.sub(expression, '', s) for s in result.stdout.decode('utf-8').split("\n") if len(s) > 0]
         return files
 

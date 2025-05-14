@@ -198,8 +198,8 @@ class Module:
         #Last-Modified: Wed, 13 Nov 2019 20:20:03 GMT
         #Content-Length: 4011
         #Accept-ranges: bytes
-        reSIZE = re.compile('Content-Length: (\d+)')
-        reTIME = re.compile('Last-Modified: (.+)')
+        reSIZE = re.compile(r'Content-Length: (\d+)')
+        reTIME = re.compile(r'Last-Modified: (.+)')
         sz = None
         tm = None
         for line in lines:

@@ -196,8 +196,8 @@ def generate_commands(configpath, reference, mirror, general):
 
 def parse_commands(commandspath):
     config = {}
-    rsection = re.compile("^\[[a-zA-Z_0-9]+\]$")
-    raeqb = re.compile("^(.*)[ \t]*=[ \t*]([^=]*)$")
+    rsection = re.compile(r"^\[[a-zA-Z_0-9]+\]$")
+    raeqb = re.compile(r"^(.*)[ \t]*=[ \t*]([^=]*)$")
     with open(commandspath, "r") as f:
         lines = [l.strip() for l in f.readlines()]
         section = "__NONE__"

@@ -121,8 +121,8 @@ class Module:
                 stdout=subprocess.PIPE).stdout
         lines = [l for l in raw.decode('utf-8').split("\n") if (len(l) > 0)]
 
-        refile = re.compile("f (\d+) (\d+) ([^ ]+) (.*)")
-        redir = re.compile("d (\d+) (.*)")
+        refile = re.compile(r"f (\d+) (\d+) ([^ ]+) (.*)")
+        redir = re.compile(r"d (\d+) (.*)")
         for l in lines:
             mm = refile.match(l)
             if(mm):
@@ -160,7 +160,7 @@ class Module:
             env=os.environ)
         lines = [l for l in raw.decode('utf-8').split("\n") if (len(l) > 0)]
 
-        rr = re.compile("f (\d+) (\d+) ([^ ]+) (.*)")
+        rr = re.compile(r"f (\d+) (\d+) ([^ ]+) (.*)")
         for l in lines:
             mm = rr.match(l)
             if(mm is not None):
