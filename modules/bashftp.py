@@ -45,7 +45,9 @@ class FileHandle:
         self.offset += self.m.block_size
 
     def rewind(self):
-        self.offset = 0
+        #self.offset = 0
+        # let's try to continue from where we were...
+        pass
 
     def ff(self):
         self.offset, _, _ = self.m.stat(self.path)
