@@ -2,6 +2,7 @@ test.conf
 *.conf
 __pycache__
 *.xsync
+xsync.*
 *.log
 vm/*.iso
 vm/*.img
