@@ -142,7 +142,7 @@ def generate_commands(configpath, reference, mirror, general):
             ref_hash = 'missing'
             mir_hash = 'missing'
 
-        print(repr((i, ref_sz, ref_tm, ref_hash, mir_sz, mir_tm, mir_hash)))
+        #print(repr((i, ref_sz, ref_tm, ref_hash, mir_sz, mir_tm, mir_hash)))
 
         if((general['CompareSize'] and ref_sz != mir_sz)
             or (general['CompareTimestamp'] and ref_tm != mir_tm)
